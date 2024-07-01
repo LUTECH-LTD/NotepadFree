@@ -13,7 +13,19 @@
         android:theme="@style/AppTheme"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.PrivacyPolicyActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.HelpActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.SettingsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.BackupActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

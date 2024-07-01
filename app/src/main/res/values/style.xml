@@ -3,5 +3,6 @@
     <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/color_brown</item>
         <item name="android:statusBarColor">@color/color_black_medium</item>
+        <item name="android:windowBackground">@color/color_beige_medium</item>
     </style>
 </resources>
