@@ -34,17 +34,17 @@ class CategoryViewModel : ViewModel() {
     }
 
     fun insert(category: Category) = viewModelScope.launch {
-        categoryDao.insert(category)
+        categoryRepository.insert(category)
         fetchCategories()
     }
 
     fun update(category: Category) = viewModelScope.launch {
-        categoryDao.update(category)
+        categoryRepository.update(category)
         fetchCategories()
     }
 
     fun delete(category: Category) = viewModelScope.launch {
-        categoryDao.delete(category)
+        categoryRepository.delete(category)
         fetchCategories()
     }
 }
