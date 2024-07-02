@@ -30,7 +30,7 @@ class CategoryViewModel : ViewModel() {
 
     fun fetchCategories() {
         _categories.value = categoryRepository.fetchCategories()
-        // Master
+        Log.e(Constants.TAG, "fetchCategories: ", )
     }
 
     fun insert(category: Category) = viewModelScope.launch {
