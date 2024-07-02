@@ -30,6 +30,7 @@ class CategoryViewModel : ViewModel() {
 
     fun fetchCategories() {
         _categories.value = categoryRepository.fetchCategories()
+        // Master
     }
 
     fun insert(category: Category) = viewModelScope.launch {
