@@ -17,7 +17,7 @@ class HelpActivity : AppCompatActivity() {
     }
 
     private fun initViews() {
-        initToolbar() // Init
+        initToolbar()
     }
 
     private fun initToolbar() {
