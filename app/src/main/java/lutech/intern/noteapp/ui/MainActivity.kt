@@ -8,6 +8,7 @@ import androidx.core.view.GravityCompat
 import androidx.fragment.app.Fragment
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.databinding.ActivityMainBinding
+import lutech.intern.noteapp.ui.category.CategoriesFragment
 
 class MainActivity : AppCompatActivity() {
     private val binding by lazy { ActivityMainBinding.inflate(layoutInflater) }

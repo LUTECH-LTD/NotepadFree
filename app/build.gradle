@@ -52,4 +52,9 @@ dependencies {
     kapt "androidx.room:room-compiler:$room_version"
     implementation libs.androidx.room.ktx
 
+    implementation libs.androidx.lifecycle.viewmodel.ktx
+    implementation libs.androidx.lifecycle.livedata.ktx
+    implementation libs.androidx.fragment.ktx // Or the latest version
+    implementation libs.androidx.activity.ktx // Or the latest version
+
 }

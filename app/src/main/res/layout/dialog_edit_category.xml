@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="8dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="30dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/edit_category_name"
+        android:textSize="14sp" />
+
+    <androidx.appcompat.widget.AppCompatEditText
+        android:id="@+id/nameEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/new_category_name"
+        android:textColor="@color/color_black_medium"
+        android:textColorHint="@color/color_grey_medium"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/messageError"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:textColor="@android:color/holo_red_light"
+        android:layout_height="wrap_content"
+        android:text="@string/category_exists"
+        android:textSize="14sp" />
+</LinearLayout>

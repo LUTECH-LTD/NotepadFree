@@ -2,6 +2,8 @@
     <string name="app_name">Notepad Free</string>
     <string name="notes">Notes</string>
     <string name="new_category_name">New category name</string>
+    <string name="edit_category_name">Edit category name</string>
+    <string name="category_exists">Category with that name already exists</string>
     <string name="categories">Categories</string>
     <string name="edit_categories">Edit categories</string>
     <string name="backup">Backup</string>
@@ -21,4 +23,7 @@
     <string name="save_backup_to_a_file">Save backup to a file</string>
     <string name="load_notes_from_a_backup_file">Load notes from a backup file</string>
     <string name="content_backup">A backup copy is a file containing copy of each note (except deleted notes in the "Trash" folder). It can be used to make copy of notes outside the device, or to transfer notes to another device. Categories are not included in a backup copy file.</string>
+
+    <string name="ok">Ok</string>
+    <string name="cancel">Cancel</string>
 </resources>
