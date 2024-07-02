@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    id 'kotlin-kapt'
 }
 
 android {
@@ -45,4 +46,15 @@ dependencies {
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core
+
+    def room_version = "2.6.1"
+    implementation libs.androidx.room.runtime
+    kapt "androidx.room:room-compiler:$room_version"
+    implementation libs.androidx.room.ktx
+
+    implementation libs.androidx.lifecycle.viewmodel.ktx
+    implementation libs.androidx.lifecycle.livedata.ktx
+    implementation libs.androidx.fragment.ktx // Or the latest version
+    implementation libs.androidx.activity.ktx // Or the latest version
+
 }

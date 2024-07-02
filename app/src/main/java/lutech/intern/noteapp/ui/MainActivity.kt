@@ -1,11 +1,14 @@
 package lutech.intern.noteapp.ui
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
+import androidx.fragment.app.Fragment
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.databinding.ActivityMainBinding
+import lutech.intern.noteapp.ui.category.CategoriesFragment
 
 class MainActivity : AppCompatActivity() {
     private val binding by lazy { ActivityMainBinding.inflate(layoutInflater) }
@@ -13,6 +16,11 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         initViews()
+
+        if(savedInstanceState == null) {
+            loadFragment(NotesFragment.newInstance())
+            binding.toolbar.title = getString(R.string.app_name)
+        }
     }
 
     private fun initViews() {
@@ -31,11 +39,13 @@ class MainActivity : AppCompatActivity() {
         binding.navigationView.setNavigationItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.menu_notes -> {
-
+                    loadFragment(NotesFragment.newInstance())
+                    binding.toolbar.title = getString(R.string.app_name)
                 }
 
                 R.id.menu_edit_categories -> {
-
+                    loadFragment(CategoriesFragment.newInstance())
+                    binding.toolbar.title = getString(R.string.categories)
                 }
 
                 R.id.menu_backup -> {
@@ -44,7 +54,8 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 R.id.menu_trash -> {
-
+                    loadFragment(TrashFragment.newInstance())
+                    binding.toolbar.title = getString(R.string.trash)
                 }
 
                 R.id.menu_setting -> {
@@ -53,7 +64,8 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 R.id.menu_rate -> {
-
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.uri_app)))
+                    startActivity(intent)
                 }
 
                 R.id.menu_help -> {
@@ -69,5 +81,11 @@ class MainActivity : AppCompatActivity() {
             binding.drawerLayout.closeDrawers()
             true
         }
+    }
+
+    private fun loadFragment(fragment: Fragment) {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.container, fragment)
+            .commitNow()
     }
 }

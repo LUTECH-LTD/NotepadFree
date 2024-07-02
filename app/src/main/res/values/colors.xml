@@ -6,6 +6,8 @@
     <color name="color_brown">#917754</color>
     <color name="color_brown_medium">#796A43</color>
     <color name="color_grey">#747565</color>
+    <color name="color_grey_medium">#898A7F</color>
     <color name="color_beige">#F9F8C0</color>
     <color name="color_beige_medium">#FFFFDD</color>
+    <color name="color_blue">#0908AC</color>
 </resources>
