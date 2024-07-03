@@ -6,6 +6,7 @@
     <string name="category_exists">Category with that name already exists</string>
     <string name="categories">Categories</string>
     <string name="edit_categories">Edit categories</string>
+    <string name="uncategorized">Uncategorized</string>
     <string name="backup">Backup</string>
     <string name="trash">Trash</string>
     <string name="settings">Settings</string>

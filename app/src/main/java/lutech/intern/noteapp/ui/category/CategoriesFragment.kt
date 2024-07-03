@@ -2,17 +2,14 @@ package lutech.intern.noteapp.ui.category
 
 import android.app.AlertDialog
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.adapter.CategoryAdapter
-import lutech.intern.noteapp.constant.Constants
 import lutech.intern.noteapp.data.model.Category
 import lutech.intern.noteapp.databinding.DialogEditCategoryBinding
 import lutech.intern.noteapp.databinding.FragmentCategoriesBinding
@@ -49,8 +46,8 @@ class CategoriesFragment : Fragment() {
             categoryAdapter.submitCategories(categories)
         }
 
-        categoryViewModel.insertResult.observe(viewLifecycleOwner) { success ->
-            if (success) {
+        categoryViewModel.insertResult.observe(viewLifecycleOwner) { isSuccess ->
+            if (isSuccess) {
                 binding.nameEditText.text?.clear()
             }
         }
@@ -100,8 +97,8 @@ class CategoriesFragment : Fragment() {
             }
         }
 
-        val observeUpdateInsert = Observer<Boolean?> { success ->
-            success?.let {
+        val observeUpdateInsert = Observer<Boolean?> { isSuccess ->
+            isSuccess?.let {
                 if (it) {
                     dialog.dismiss()
                     dialogBinding.messageError.visibility = View.GONE

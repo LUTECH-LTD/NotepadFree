@@ -5,12 +5,13 @@
         android:icon="@drawable/ic_note"
         android:title="@string/notes" />
 
-    <item android:title="Categories">
+    <item android:id="@+id/menu_categories"
+        android:title="Categories">
         <menu>
-            <item
-                android:id="@+id/menu_edit_categories"
-                android:icon="@drawable/ic_edit_categories"
-                android:title="@string/edit_categories" />
+<!--            <item-->
+<!--                android:id="@+id/menu_edit_categories"-->
+<!--                android:icon="@drawable/ic_edit_categories"-->
+<!--                android:title="@string/edit_categories" />-->
         </menu>
     </item>
 
