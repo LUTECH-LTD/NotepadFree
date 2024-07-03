@@ -12,7 +12,7 @@ import lutech.intern.noteapp.R
 import lutech.intern.noteapp.databinding.ActivityMainBinding
 import lutech.intern.noteapp.ui.BackupActivity
 import lutech.intern.noteapp.ui.HelpActivity
-import lutech.intern.noteapp.ui.NotesFragment
+import lutech.intern.noteapp.ui.note.NotesFragment
 import lutech.intern.noteapp.ui.PrivacyPolicyActivity
 import lutech.intern.noteapp.ui.SettingsActivity
 import lutech.intern.noteapp.ui.TrashFragment
@@ -68,7 +68,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.menu_edit_categories -> {
                     loadFragment(
                         fragment = CategoriesFragment.newInstance(),
-                        title = getString(R.string.edit_categories),
+                        title = getString(R.string.categories),
                         subTitle = null
                     )
                 }
