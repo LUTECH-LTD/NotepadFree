@@ -37,13 +37,13 @@ class CategoryAdapter : RecyclerView.Adapter<CategoryAdapter.CategoryViewHolder>
     inner class CategoryViewHolder(private val binding: ItemCategoryBinding) : ViewHolder(binding.root) {
         fun onBind(category: Category) {
             binding.nameCategoryTextView.text = category.name
-            binding.editButton.setOnClickListener { listener?.onEditButtonClicked(category) }
-            binding.deleteButton.setOnClickListener { listener?.onDeleteButtonClicked(category) }
+            binding.editButton.setOnClickListener { listener?.onEditButtonListener(category) }
+            binding.deleteButton.setOnClickListener { listener?.onDeleteButtonListener(category) }
         }
     }
 
     interface OnItemClickListener {
-        fun onEditButtonClicked(category: Category)
-        fun onDeleteButtonClicked(category: Category)
+        fun onEditButtonListener(category: Category)
+        fun onDeleteButtonListener(category: Category)
     }
 }
