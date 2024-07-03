@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import lutech.intern.noteapp.common.NoteApplication
-import lutech.intern.noteapp.data.model.Category
+import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.data.repository.CategoryRepository
 import lutech.intern.noteapp.database.NoteDatabase
 

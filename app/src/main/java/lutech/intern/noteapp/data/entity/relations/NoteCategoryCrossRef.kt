@@ -1,30 +1,31 @@
-package lutech.intern.noteapp.data.model
+package lutech.intern.noteapp.data.entity.relations
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
+import lutech.intern.noteapp.data.entity.Category
+import lutech.intern.noteapp.data.entity.Note
 
 @Entity(
-    tableName = "NoteCategoryJoin",
     primaryKeys = ["noteId", "categoryId"],
     foreignKeys = [
         ForeignKey(
             entity = Note::class,
-            parentColumns = ["id"],
+            parentColumns = ["noteId"],
             childColumns = ["noteId"],
             onDelete = ForeignKey.CASCADE,
-            onUpdate = ForeignKey.CASCADE
         ),
         ForeignKey(
             entity = Category::class,
-            parentColumns = ["id"],
+            parentColumns = ["categoryId"],
             childColumns = ["categoryId"],
             onDelete = ForeignKey.CASCADE,
-            onUpdate = ForeignKey.CASCADE
         )
-    ]
+    ],
+    indices = [Index(value = ["noteId"]), Index(value = ["categoryId"])]
 )
-data class NoteCategoryJoin(
+data class NoteCategoryCrossRef(
     @ColumnInfo(name = "noteId")
     val noteId: Long,
     @ColumnInfo(name = "categoryId")

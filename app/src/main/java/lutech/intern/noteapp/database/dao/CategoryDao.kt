@@ -6,8 +6,10 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
-import lutech.intern.noteapp.data.model.Category
+import lutech.intern.noteapp.data.entity.Category
+import lutech.intern.noteapp.data.entity.CategoryWithNotes
 
 @Dao
 interface CategoryDao {
@@ -23,6 +25,10 @@ interface CategoryDao {
     @Query("SELECT * FROM category")
     fun fetchAllCategories(): LiveData<List<Category>>
 
-    @Query("SELECT * FROM category WHERE name =:name")
+    @Query("SELECT * FROM Category WHERE name =:name")
     fun getCategoryByName(name: String): Category?
+
+    @Transaction
+    @Query("SELECT * FROM Category")
+    fun getCategoryWithNotes(): LiveData<List<CategoryWithNotes>>
 }

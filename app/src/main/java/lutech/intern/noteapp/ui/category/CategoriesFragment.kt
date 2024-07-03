@@ -10,7 +10,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.adapter.CategoryAdapter
-import lutech.intern.noteapp.data.model.Category
+import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.databinding.DialogEditCategoryBinding
 import lutech.intern.noteapp.databinding.FragmentCategoriesBinding
 
@@ -91,7 +91,7 @@ class CategoriesFragment : Fragment() {
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             val newName = dialogBinding.nameEditText.text.toString().trim()
             if (newName.isNotEmpty()) {
-                categoryViewModel.update(Category(category.id, newName))
+                categoryViewModel.update(Category(category.categoryId, newName))
             } else {
                 dialogBinding.messageError.visibility = View.VISIBLE
             }

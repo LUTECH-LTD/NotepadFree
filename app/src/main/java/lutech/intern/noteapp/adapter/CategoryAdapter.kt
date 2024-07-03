@@ -5,7 +5,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
-import lutech.intern.noteapp.data.model.Category
+import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.databinding.ItemCategoryBinding
 
 class CategoryAdapter : RecyclerView.Adapter<CategoryAdapter.CategoryViewHolder>() {

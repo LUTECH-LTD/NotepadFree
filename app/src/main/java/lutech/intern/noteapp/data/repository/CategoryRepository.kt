@@ -1,7 +1,7 @@
 package lutech.intern.noteapp.data.repository
 
 import androidx.lifecycle.LiveData
-import lutech.intern.noteapp.data.model.Category
+import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.database.dao.CategoryDao
 
 class CategoryRepository(private val categoryDao: CategoryDao) {

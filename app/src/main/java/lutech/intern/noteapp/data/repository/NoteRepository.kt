@@ -1,10 +1,7 @@
 package lutech.intern.noteapp.data.repository
 
 import androidx.lifecycle.LiveData
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import lutech.intern.noteapp.data.model.Note
+import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.database.dao.NoteDao
 
 class NoteRepository(private val noteDao: NoteDao) {

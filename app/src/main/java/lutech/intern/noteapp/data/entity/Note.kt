@@ -1,17 +1,14 @@
-package lutech.intern.noteapp.data.model
+package lutech.intern.noteapp.data.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
-@Entity(tableName = "Note")
+@Entity
 data class Note(
     @PrimaryKey(true)
-    @ColumnInfo(name = "id")
-    val id: Long = 0L,
+    @ColumnInfo(name = "noteId")
+    val noteId: Long = 0L,
     @ColumnInfo(name = "title")
     val title: String? = null,
     @ColumnInfo(name = "content")

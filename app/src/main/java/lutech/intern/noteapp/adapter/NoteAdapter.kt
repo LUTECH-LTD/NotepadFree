@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import lutech.intern.noteapp.R
-import lutech.intern.noteapp.data.model.Note
+import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.databinding.ItemNoteBinding
 import lutech.intern.noteapp.utils.DateTimeUtils
 
