@@ -6,9 +6,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
+import lutech.intern.noteapp.R
 import lutech.intern.noteapp.adapter.NoteAdapter
+import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.data.entity.Note
+import lutech.intern.noteapp.data.entity.NoteWithCategories
 import lutech.intern.noteapp.databinding.FragmentNotesBinding
+import lutech.intern.noteapp.ui.main.MainActivity
 
 class NotesFragment : Fragment() {
     private val binding by lazy { FragmentNotesBinding.inflate(layoutInflater) }
@@ -38,8 +42,35 @@ class NotesFragment : Fragment() {
     }
 
     private fun observeDataViewModel() {
-        notesViewModel.notes.observe(viewLifecycleOwner) {
-            noteAdapter.submitNotes(it)
+        notesViewModel.noteWithCategories.observe(viewLifecycleOwner) { list ->
+            (activity as MainActivity).getItemCurrentIdSelected()?.let { idMenu ->
+                when(idMenu) {
+                    R.id.menu_notes -> noteAdapter.submitList(list)
+                    R.id.menu_uncategorized -> {
+                        val noteWithCategoriesNew = mutableListOf<NoteWithCategories>()
+                        list.forEach { noteWithCategories ->
+                            val categories = noteWithCategories.categories
+                            if(categories.isEmpty()) {
+                                noteWithCategoriesNew.add(noteWithCategories)
+                            }
+                        }
+                        noteAdapter.submitList(noteWithCategoriesNew)
+                    }
+
+                    else -> {
+                        val noteWithCategoriesNew = mutableListOf<NoteWithCategories>()
+                        list.forEach { noteWithCategories ->
+                            val categories = noteWithCategories.categories
+                            categories.forEach { category ->
+                                if(idMenu == category.categoryId.toInt()) {
+                                    noteWithCategoriesNew.add(noteWithCategories)
+                                }
+                            }
+                        }
+                        noteAdapter.submitList(noteWithCategoriesNew)
+                    }
+                }
+            }
         }
     }
 
