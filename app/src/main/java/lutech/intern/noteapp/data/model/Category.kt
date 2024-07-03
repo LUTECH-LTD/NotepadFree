@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
 data class Category(
     @PrimaryKey(true)
     @ColumnInfo(name = "id")
-    val id: Int = 0,
+    val id: Long = 0L,
     @ColumnInfo(name = "name")
     val name: String,
 )

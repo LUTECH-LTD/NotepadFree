@@ -3,12 +3,18 @@ package lutech.intern.noteapp.ui.main
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import lutech.intern.noteapp.R
+import lutech.intern.noteapp.constant.Constants
+import lutech.intern.noteapp.data.model.NoteCategoryJoin
+import lutech.intern.noteapp.database.NoteDatabase
 import lutech.intern.noteapp.databinding.ActivityMainBinding
 import lutech.intern.noteapp.ui.BackupActivity
 import lutech.intern.noteapp.ui.HelpActivity
@@ -17,6 +23,7 @@ import lutech.intern.noteapp.ui.PrivacyPolicyActivity
 import lutech.intern.noteapp.ui.SettingsActivity
 import lutech.intern.noteapp.ui.TrashFragment
 import lutech.intern.noteapp.ui.category.CategoriesFragment
+import kotlin.math.log
 
 
 class MainActivity : AppCompatActivity() {
@@ -32,6 +39,15 @@ class MainActivity : AppCompatActivity() {
         if (savedInstanceState == null) {
             loadFragment(NotesFragment.newInstance(), getString(R.string.app_name), null)
         }
+
+        val noteCategoryDao = NoteDatabase.getDatabase(this).noteCategoryDao()
+//        lifecycleScope.launch {
+//            noteCategoryDao.insertNoteCategoryCrossRef(NoteCategoryJoin(1, 1))
+//            noteCategoryDao.insertNoteCategoryCrossRef(NoteCategoryJoin(2, 1))
+//        }
+//        noteCategoryDao.getCategoryWithNotes().observe(this){ it ->
+//            Log.e(Constants.TAG, "onCreate: $it}")
+//        }
     }
 
     private fun initViews() {
@@ -138,7 +154,7 @@ class MainActivity : AppCompatActivity() {
                 categories.forEach { category ->
                     it.add(
                         R.id.menu_categories,
-                        category.id,
+                        category.id!!.toInt(),
                         Menu.NONE,
                         category.name
                     ).setIcon(R.drawable.ic_categorized)

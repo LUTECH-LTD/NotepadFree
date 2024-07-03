@@ -9,9 +9,9 @@ import java.util.Locale
 
 @Entity(tableName = "Note")
 data class Note(
-    @PrimaryKey(autoGenerate = true)
+    @PrimaryKey(true)
     @ColumnInfo(name = "id")
-    val id: Int = 0,
+    val id: Long = 0L,
     @ColumnInfo(name = "title")
     val title: String? = null,
     @ColumnInfo(name = "content")
