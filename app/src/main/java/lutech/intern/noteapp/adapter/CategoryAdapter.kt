@@ -5,10 +5,10 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
-import lutech.intern.noteapp.data.model.Category
+import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.databinding.ItemCategoryBinding
 
-class CategoryAdapter : RecyclerView.Adapter<CategoryAdapter.CategoryViewHolder>(){
+class CategoryAdapter : RecyclerView.Adapter<CategoryAdapter.CategoryViewHolder>() {
     private val categories = mutableListOf<Category>()
     private var listener: OnItemClickListener? = null
 
@@ -37,13 +37,13 @@ class CategoryAdapter : RecyclerView.Adapter<CategoryAdapter.CategoryViewHolder>
     inner class CategoryViewHolder(private val binding: ItemCategoryBinding) : ViewHolder(binding.root) {
         fun onBind(category: Category) {
             binding.nameCategoryTextView.text = category.name
-            binding.editButton.setOnClickListener { listener?.onEditButtonClicked(category) }
-            binding.deleteButton.setOnClickListener { listener?.onDeleteButtonClicked(category) }
+            binding.editButton.setOnClickListener { listener?.onEditButtonListener(category) }
+            binding.deleteButton.setOnClickListener { listener?.onDeleteButtonListener(category) }
         }
     }
 
     interface OnItemClickListener {
-        fun onEditButtonClicked(category: Category)
-        fun onDeleteButtonClicked(category: Category)
+        fun onEditButtonListener(category: Category)
+        fun onDeleteButtonListener(category: Category)
     }
 }

@@ -7,9 +7,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.adapter.CategoryAdapter
-import lutech.intern.noteapp.data.model.Category
+import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.databinding.DialogEditCategoryBinding
 import lutech.intern.noteapp.databinding.FragmentCategoriesBinding
 
@@ -28,7 +29,7 @@ class CategoriesFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initViews()
-        initViewModel()
+        observeDataViewModel()
         handleEvent()
     }
 
@@ -40,9 +41,15 @@ class CategoriesFragment : Fragment() {
         binding.categoriesRecyclerView.adapter = categoryAdapter
     }
 
-    private fun initViewModel() {
+    private fun observeDataViewModel() {
         categoryViewModel.categories.observe(viewLifecycleOwner) { categories ->
             categoryAdapter.submitCategories(categories)
+        }
+
+        categoryViewModel.insertResult.observe(viewLifecycleOwner) { isSuccess ->
+            if (isSuccess) {
+                binding.nameEditText.text?.clear()
+            }
         }
     }
 
@@ -51,28 +58,28 @@ class CategoriesFragment : Fragment() {
             val name = binding.nameEditText.text.toString().trim()
             if (name.isNotEmpty()) {
                 categoryViewModel.insert(Category(name = name))
-                binding.nameEditText.text?.clear()
             }
         }
 
         categoryAdapter.setOnItemClickListener(object : CategoryAdapter.OnItemClickListener {
-            override fun onEditButtonClicked(category: Category) {
-                showDialogEditCategory(category)
+            override fun onEditButtonListener(category: Category) {
+                showEditCategoryDialog(category)
             }
 
-            override fun onDeleteButtonClicked(category: Category) {
-                showDialogConfirmDeleteCategory(category)
+            override fun onDeleteButtonListener(category: Category) {
+                showConfirmDeleteCategoryDialog(category)
             }
         })
     }
 
-    private fun showDialogConfirmDeleteCategory(category: Category) {
+    private fun showEditCategoryDialog(category: Category) {
+        val dialogBinding = DialogEditCategoryBinding.inflate(layoutInflater)
+        dialogBinding.nameEditText.setText(category.name)
+
         val builder = AlertDialog.Builder(requireContext())
         builder.apply {
-            setMessage("Delete category '${category.name}'? Notes from the category won't be deleted.")
-            setPositiveButton(R.string.ok) { _, _ ->
-                categoryViewModel.delete(category)
-            }
+            setView(dialogBinding.root)
+            setPositiveButton(R.string.ok, null)
             setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
                 dialog.dismiss()
             }
@@ -80,20 +87,40 @@ class CategoriesFragment : Fragment() {
 
         val dialog = builder.create()
         dialog.show()
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val newName = dialogBinding.nameEditText.text.toString().trim()
+            if (newName.isNotEmpty()) {
+                categoryViewModel.update(Category(category.categoryId, newName))
+            } else {
+                dialogBinding.messageError.visibility = View.VISIBLE
+            }
+        }
+
+        val observeUpdateInsert = Observer<Boolean?> { isSuccess ->
+            isSuccess?.let {
+                if (it) {
+                    dialog.dismiss()
+                    dialogBinding.messageError.visibility = View.GONE
+                } else {
+                    dialogBinding.messageError.visibility = View.VISIBLE
+                }
+                categoryViewModel.resetUpdateResult()
+            }
+        }
+        categoryViewModel.updateResult.observe(viewLifecycleOwner, observeUpdateInsert)
+
+        dialog.setOnDismissListener {
+            categoryViewModel.updateResult.removeObserver(observeUpdateInsert)
+        }
     }
 
-    private fun showDialogEditCategory(category: Category) {
-        val dialogBinding = DialogEditCategoryBinding.inflate(layoutInflater)
-        dialogBinding.nameEditText.setText(category.name)
-
+    private fun showConfirmDeleteCategoryDialog(category: Category) {
         val builder = AlertDialog.Builder(requireContext())
         builder.apply {
-            setView(dialogBinding.root)
-            setPositiveButton(R.string.ok) { dialog, _ ->
-                val newName = dialogBinding.nameEditText.text.toString().trim()
-                if (newName.isNotEmpty()) {
-                    categoryViewModel.update(Category(category.id, newName))
-                }
+            setMessage("Delete category '${category.name}'? Notes from the category won't be deleted.")
+            setPositiveButton(R.string.ok) { _, _ ->
+                categoryViewModel.delete(category)
             }
             setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
                 dialog.dismiss()

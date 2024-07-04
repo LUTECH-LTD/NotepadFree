@@ -1,18 +1,18 @@
 package lutech.intern.noteapp.database.dao
 
+import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
-import lutech.intern.noteapp.data.model.Category
+import lutech.intern.noteapp.data.entity.Category
+import lutech.intern.noteapp.data.entity.CategoryWithNotes
 
 @Dao
 interface CategoryDao {
-    @Query("SELECT * FROM category")
-    fun getAllCategories(): List<Category>
-
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(category: Category)
 
@@ -21,4 +21,14 @@ interface CategoryDao {
 
     @Delete
     suspend fun delete(category: Category)
+
+    @Query("SELECT * FROM category")
+    fun fetchAllCategories(): LiveData<List<Category>>
+
+    @Query("SELECT * FROM Category WHERE name =:name")
+    fun getCategoryByName(name: String): Category?
+
+    @Transaction
+    @Query("SELECT * FROM Category")
+    fun getCategoryWithNotes(): LiveData<List<CategoryWithNotes>>
 }
