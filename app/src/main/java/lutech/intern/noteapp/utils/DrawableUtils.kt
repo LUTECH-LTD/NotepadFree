@@ -8,7 +8,7 @@ import lutech.intern.noteapp.R
 
 object DrawableUtils {
     fun createGradientDrawable(context: Context, colorHex: String): GradientDrawable {
-        val startColor = blendColorWithWhite(Color.parseColor(colorHex), 0.2f)
+        val startColor = blendColorWithWhite(Color.parseColor(colorHex), 0.5f)
         val endColor = Color.parseColor(colorHex)
         val gradientDrawable = GradientDrawable(
             GradientDrawable.Orientation.TOP_BOTTOM,
