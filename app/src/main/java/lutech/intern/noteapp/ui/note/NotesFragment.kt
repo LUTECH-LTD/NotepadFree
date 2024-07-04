@@ -59,11 +59,11 @@ class NotesFragment : Fragment() {
     private fun handleEvent() {
         binding.addButton.setOnClickListener {
             notesViewModel.insert(Note(title = "E", content = "MyNote"))
-            notesViewModel.insert(Note(title = "B", content = "MyNote"))
-            notesViewModel.insert(Note(title = "D", content = "MyNote"))
-            notesViewModel.insert(Note(title = "C", content = "MyNote"))
-            notesViewModel.insert(Note(title = "F", content = "MyNote"))
-            notesViewModel.insert(Note(title = "A", content = "MyNote"))
+//            notesViewModel.insert(Note(title = "B", content = "MyNote", color = "#BBE9FF"))
+//            notesViewModel.insert(Note(title = "D", content = "MyNote", color = "#97BE5A"))
+//            notesViewModel.insert(Note(title = "C", content = "MyNote", color = "#FFA27F"))
+//            notesViewModel.insert(Note(title = "F", content = "MyNote", color = "#BACD92"))
+//            notesViewModel.insert(Note(title = "A", content = "MyNote", color = "#A5DD9B"))
         }
     }
 

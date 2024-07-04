@@ -116,6 +116,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+            invalidateOptionsMenu()
             binding.drawerLayout.closeDrawers()
             true
         }
@@ -157,4 +158,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun getSelectedMenuItemId() = selectedMenuItemId
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        supportFragmentManager.findFragmentById(R.id.container)?.let { fragment ->
+            if(fragment is NotesFragment) {
+                menuInflater.inflate(R.menu.menu_option_page_notes, menu)
+            }
+        }
+        return super.onCreateOptionsMenu(menu)
+    }
 }

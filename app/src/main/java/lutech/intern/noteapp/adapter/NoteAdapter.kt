@@ -6,10 +6,10 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import lutech.intern.noteapp.R
-import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.data.entity.NoteWithCategories
 import lutech.intern.noteapp.databinding.ItemNoteBinding
 import lutech.intern.noteapp.utils.DateTimeUtils
+import lutech.intern.noteapp.utils.DrawableUtils
 
 class NoteAdapter : RecyclerView.Adapter<NoteAdapter.NoteViewHolder>() {
     private val noteWithCategories = mutableListOf<NoteWithCategories>()
@@ -43,6 +43,11 @@ class NoteAdapter : RecyclerView.Adapter<NoteAdapter.NoteViewHolder>() {
             } else {
                 binding.categoryNameTextView.text = categories.joinToString(", ") { it.name }
             }
+
+            binding.main.background = DrawableUtils.createGradientDrawable(
+                itemView.context,
+                noteWithCategories.note.color
+            )
         }
     }
 }
