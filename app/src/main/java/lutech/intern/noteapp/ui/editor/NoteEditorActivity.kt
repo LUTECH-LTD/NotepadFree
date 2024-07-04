@@ -11,6 +11,9 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.github.dhaval2404.colorpicker.MaterialColorPickerDialog
+import com.github.dhaval2404.colorpicker.model.ColorShape
+import com.github.dhaval2404.colorpicker.model.ColorSwatch
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.constant.Constants
 import lutech.intern.noteapp.data.entity.Note
@@ -114,9 +117,45 @@ class NoteEditorActivity : AppCompatActivity() {
                 }
 
                 R.id.menu_colorize -> {
-                    Toast.makeText(this, "menu_colorize", Toast.LENGTH_SHORT).show()
+                    val note = getNoteFormIntent()
+                    note?.let {
+                        MaterialColorPickerDialog
+                            .Builder(this)
+                            .setTitle("Select color")
+                            .setColorShape(ColorShape.SQAURE)
+                            .setColorSwatch(ColorSwatch._300)
+                            .setDefaultColor(it.color)
+                            .setColorListener { color, colorHex ->
+                                noteEditorViewModel.update(
+                                    Note(
+                                        noteId = it.noteId,
+                                        title = it.title,
+                                        content = it.content,
+                                        color = colorHex,
+                                        dateCreate = it.dateCreate
+                                    )
+                                )
+                                // Update viewColor
+                                binding.main.setBackgroundColor(
+                                    DrawableUtils.darkenColor(
+                                        Color.parseColor(colorHex),
+                                        0.5f
+                                    )
+                                )
+                                binding.toolbar.setBackgroundColor(
+                                    DrawableUtils.darkenColor(
+                                        Color.parseColor(colorHex),
+                                        0.5f
+                                    )
+                                )
+                                binding.layoutEdit.background =
+                                    DrawableUtils.createSolidDrawable(this, colorHex)
+                            }
+                            .show()
+                    }
                     true
                 }
+
                 else -> false
             }
         }
