@@ -33,15 +33,24 @@
 
     <string-array name="themeColorHex">
         <item>#F9F8C0</item>
-        <item>#614B2B</item>
-        <item>#ffbe76</item>
-        <item>#ff7979</item>
-        <item>#badc58</item>
-        <item>#dff9fb</item>
-        <item>#7ed6df</item>
-        <item>#e056fd</item>
-        <item>#686de0</item>
-        <item>#30336b</item>
-        <item>#95afc0</item>
+        <item>#EF9A9A</item>
+        <item>#B39DDB</item>
+        <item>#81D4FA</item>
+        <item>#A5D6A7</item>
+        <item>#FFF59D</item>
+        <item>#FFAB91</item>
+        <item>#B0BEC5</item>
+        <item>#F48FB1</item>
+        <item>#9FA8DA</item>
+        <item>#80DEEA</item>
+        <item>#C5E1A5</item>
+        <item>#FFE082</item>
+        <item>#BCAAA4</item>
+        <item>#CE93D8</item>
+        <item>#90CAF9</item>
+        <item>#80CBC4</item>
+        <item>#E6EE9C</item>
+        <item>#FFCC80</item>
+        <item>#EEEEEE</item>
     </string-array>
 </resources>
