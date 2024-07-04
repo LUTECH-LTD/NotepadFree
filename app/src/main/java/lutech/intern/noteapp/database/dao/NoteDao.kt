@@ -26,6 +26,6 @@ interface NoteDao {
     fun fetchAllNotes(): LiveData<List<Note>>
 
     @Transaction
-    @Query("SELECT * FROM Note")
+    @Query("SELECT * FROM Note ORDER BY lastUpdate DESC")
     fun getNoteWithCategories(): LiveData<List<NoteWithCategories>>
 }

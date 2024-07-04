@@ -21,7 +21,7 @@ import lutech.intern.noteapp.ui.category.CategoriesFragment
 class MainActivity : AppCompatActivity() {
     private val binding by lazy { ActivityMainBinding.inflate(layoutInflater) }
     private val mainViewModel: MainViewModel by viewModels()
-    private var itemCurrentIdSelected: Int? = null
+    private var selectedMenuItemId: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity() {
 
         if (savedInstanceState == null) {
             loadFragment(NotesFragment.newInstance(), getString(R.string.app_name), null)
-            itemCurrentIdSelected = R.id.menu_notes
+            selectedMenuItemId = R.id.menu_notes
         }
     }
 
@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity() {
                         title = getString(R.string.app_name),
                         subTitle = null
                     )
-                    itemCurrentIdSelected = item.itemId
+                    selectedMenuItemId = item.itemId
                 }
 
                 R.id.menu_uncategorized -> {
@@ -65,7 +65,7 @@ class MainActivity : AppCompatActivity() {
                         title = getString(R.string.app_name),
                         subTitle = item.title
                     )
-                    itemCurrentIdSelected = item.itemId
+                    selectedMenuItemId = item.itemId
                 }
 
                 R.id.menu_edit_categories -> {
@@ -112,7 +112,7 @@ class MainActivity : AppCompatActivity() {
                             title = getString(R.string.app_name),
                             subTitle = item.title
                         )
-                        itemCurrentIdSelected = item.itemId
+                        selectedMenuItemId = item.itemId
                     }
                 }
             }
@@ -156,5 +156,5 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun getItemCurrentIdSelected() = itemCurrentIdSelected
+    fun getSelectedMenuItemId() = selectedMenuItemId
 }

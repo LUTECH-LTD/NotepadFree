@@ -8,9 +8,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.viewModels
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.adapter.NoteAdapter
-import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.data.entity.Note
-import lutech.intern.noteapp.data.entity.NoteWithCategories
 import lutech.intern.noteapp.databinding.FragmentNotesBinding
 import lutech.intern.noteapp.ui.main.MainActivity
 
@@ -43,10 +41,10 @@ class NotesFragment : Fragment() {
 
     private fun observeDataViewModel() {
         notesViewModel.noteWithCategories.observe(viewLifecycleOwner) { list ->
-            (activity as MainActivity).getItemCurrentIdSelected()?.let { idMenu ->
+            (activity as MainActivity).getSelectedMenuItemId()?.let { idMenu ->
                 val listFilter = when (idMenu) {
                     R.id.menu_notes -> list
-                    R.id.menu_uncategorized -> list.filter { it.categories.isNotEmpty() }
+                    R.id.menu_uncategorized -> list.filter { it.categories.isEmpty() }
                     else -> list.filter { itemList ->
                         itemList.categories.any {
                             it.categoryId.toInt() == idMenu
@@ -60,7 +58,12 @@ class NotesFragment : Fragment() {
 
     private fun handleEvent() {
         binding.addButton.setOnClickListener {
-            notesViewModel.insert(Note(title = "Title1", content = "MyNote"))
+            notesViewModel.insert(Note(title = "E", content = "MyNote"))
+            notesViewModel.insert(Note(title = "B", content = "MyNote"))
+            notesViewModel.insert(Note(title = "D", content = "MyNote"))
+            notesViewModel.insert(Note(title = "C", content = "MyNote"))
+            notesViewModel.insert(Note(title = "F", content = "MyNote"))
+            notesViewModel.insert(Note(title = "A", content = "MyNote"))
         }
     }
 
