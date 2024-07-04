@@ -13,6 +13,8 @@ data class Note(
     val title: String? = null,
     @ColumnInfo(name = "content")
     val content: String? = null,
+    @ColumnInfo(name = "dateCreate")
+    val dateCreate: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "lastUpdate")
-    val lastUpdate: Long = System.currentTimeMillis()
+    val lastUpdate: Long = System.currentTimeMillis(),
 )

@@ -35,7 +35,7 @@ class NoteAdapter : RecyclerView.Adapter<NoteAdapter.NoteViewHolder>() {
     inner class NoteViewHolder(private val binding: ItemNoteBinding) : ViewHolder(binding.root) {
         fun onBind(noteWithCategories: NoteWithCategories) {
             binding.titleTextView.text = noteWithCategories.note.title ?: itemView.context.getString(R.string.untitled)
-            binding.lastUpdateTextView.text = "Last edit: ${DateTimeUtils.getFormattedDateTime(noteWithCategories.note.lastUpdate)}"
+            binding.lastUpdateTextView.text = "Last edit: ${DateTimeUtils.getFormattedDateTime(noteWithCategories.note.lastUpdate!!)}"
 
             val categories = noteWithCategories.categories
             if(categories.isEmpty()) {

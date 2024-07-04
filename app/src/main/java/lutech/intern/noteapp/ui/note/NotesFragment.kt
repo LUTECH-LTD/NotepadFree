@@ -44,39 +44,23 @@ class NotesFragment : Fragment() {
     private fun observeDataViewModel() {
         notesViewModel.noteWithCategories.observe(viewLifecycleOwner) { list ->
             (activity as MainActivity).getItemCurrentIdSelected()?.let { idMenu ->
-                when(idMenu) {
-                    R.id.menu_notes -> noteAdapter.submitList(list)
-                    R.id.menu_uncategorized -> {
-                        val noteWithCategoriesNew = mutableListOf<NoteWithCategories>()
-                        list.forEach { noteWithCategories ->
-                            val categories = noteWithCategories.categories
-                            if(categories.isEmpty()) {
-                                noteWithCategoriesNew.add(noteWithCategories)
-                            }
+                val listFilter = when (idMenu) {
+                    R.id.menu_notes -> list
+                    R.id.menu_uncategorized -> list.filter { it.categories.isNotEmpty() }
+                    else -> list.filter { itemList ->
+                        itemList.categories.any {
+                            it.categoryId.toInt() == idMenu
                         }
-                        noteAdapter.submitList(noteWithCategoriesNew)
-                    }
-
-                    else -> {
-                        val noteWithCategoriesNew = mutableListOf<NoteWithCategories>()
-                        list.forEach { noteWithCategories ->
-                            val categories = noteWithCategories.categories
-                            categories.forEach { category ->
-                                if(idMenu == category.categoryId.toInt()) {
-                                    noteWithCategoriesNew.add(noteWithCategories)
-                                }
-                            }
-                        }
-                        noteAdapter.submitList(noteWithCategoriesNew)
                     }
                 }
+                noteAdapter.submitList(listFilter)
             }
         }
     }
 
     private fun handleEvent() {
         binding.addButton.setOnClickListener {
-            notesViewModel.insert(Note())
+            notesViewModel.insert(Note(title = "Title1", content = "MyNote"))
         }
     }
 
