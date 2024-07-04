@@ -14,7 +14,7 @@
         android:theme="@style/AppTheme"
         tools:targetApi="31">
         <activity
-            android:name=".ui.NoteEditorActivity"
+            android:name=".ui.editor.NoteEditorActivity"
             android:exported="false" />
         <activity
             android:name=".ui.PrivacyPolicyActivity"

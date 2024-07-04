@@ -6,6 +6,9 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import lutech.intern.noteapp.R
+import lutech.intern.noteapp.adapter.CategoryAdapter.OnItemClickListener
+import lutech.intern.noteapp.data.entity.Category
+import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.data.entity.NoteWithCategories
 import lutech.intern.noteapp.databinding.ItemNoteBinding
 import lutech.intern.noteapp.utils.DateTimeUtils
@@ -13,12 +16,17 @@ import lutech.intern.noteapp.utils.DrawableUtils
 
 class NoteAdapter : RecyclerView.Adapter<NoteAdapter.NoteViewHolder>() {
     private val noteWithCategories = mutableListOf<NoteWithCategories>()
+    private var listener: OnItemClickListener? = null
 
     @SuppressLint("NotifyDataSetChanged")
     fun submitList(noteWithCategories: List<NoteWithCategories>) {
         this.noteWithCategories.clear()
         this.noteWithCategories.addAll(noteWithCategories)
         notifyDataSetChanged()
+    }
+
+    fun setOnItemClickListener(listener: OnItemClickListener) {
+        this.listener = listener
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NoteViewHolder {
@@ -34,11 +42,15 @@ class NoteAdapter : RecyclerView.Adapter<NoteAdapter.NoteViewHolder>() {
 
     inner class NoteViewHolder(private val binding: ItemNoteBinding) : ViewHolder(binding.root) {
         fun onBind(noteWithCategories: NoteWithCategories) {
-            binding.titleTextView.text = noteWithCategories.note.title ?: itemView.context.getString(R.string.untitled)
+            binding.titleTextView.text = if (noteWithCategories.note.title == null || noteWithCategories.note.title == "") {
+                    itemView.context.getString(R.string.untitled)
+                } else {
+                    noteWithCategories.note.title
+                }
             binding.lastUpdateTextView.text = "Last edit: ${DateTimeUtils.getFormattedDateTime(noteWithCategories.note.lastUpdate!!)}"
 
             val categories = noteWithCategories.categories
-            if(categories.isEmpty()) {
+            if (categories.isEmpty()) {
                 binding.categoryNameTextView.text = null
             } else {
                 binding.categoryNameTextView.text = categories.joinToString(", ") { it.name }
@@ -48,6 +60,14 @@ class NoteAdapter : RecyclerView.Adapter<NoteAdapter.NoteViewHolder>() {
                 itemView.context,
                 noteWithCategories.note.color
             )
+
+            binding.root.setOnClickListener {
+                listener?.onItemClickListener(note = noteWithCategories.note)
+            }
         }
+    }
+
+    interface OnItemClickListener {
+        fun onItemClickListener(note: Note)
     }
 }

@@ -6,6 +6,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.common.NoteApplication
+import java.io.Serializable
 
 @Entity
 data class Note(
@@ -22,4 +23,4 @@ data class Note(
     val dateCreate: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "lastUpdate")
     val lastUpdate: Long = System.currentTimeMillis(),
-)
+) : Serializable

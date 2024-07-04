@@ -14,7 +14,7 @@ import lutech.intern.noteapp.data.entity.NoteWithCategories
 @Dao
 interface NoteDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insert(note: Note)
+    suspend fun insert(note: Note): Long
 
     @Update
     suspend fun update(note: Note)
@@ -28,4 +28,7 @@ interface NoteDao {
     @Transaction
     @Query("SELECT * FROM Note ORDER BY lastUpdate DESC")
     fun getNoteWithCategories(): LiveData<List<NoteWithCategories>>
+
+    @Query("SELECT * FROM Note WHERE noteId = :noteId")
+    suspend fun fetchNoteById(noteId: Long): Note?
 }

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/menu_save"
+        android:title="Save"
+        app:showAsAction="ifRoom|collapseActionView" />
+
+    <item
+        android:id="@+id/menu_sort"
+        android:title="Undo"
+        app:showAsAction="ifRoom|collapseActionView" />
+
+    <item
+        android:id="@+id/menu_more"
+        android:icon="@drawable/ic_more"
+        app:iconTint="@color/color_white"
+        android:title="@string/more"
+        app:showAsAction="ifRoom|collapseActionView" />
+</menu>
