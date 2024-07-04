@@ -18,7 +18,7 @@ data class Note(
     @ColumnInfo(name = "content")
     val content: String? = null,
     @ColumnInfo(name = "color")
-    val color: String = "#" + Integer.toHexString(ContextCompat.getColor(NoteApplication.context, R.color.color_beige)),
+    val color: String = String.format("#%06X", 0xFFFFFF and ContextCompat.getColor(NoteApplication.context, R.color.color_beige)),
     @ColumnInfo(name = "dateCreate")
     val dateCreate: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "lastUpdate")

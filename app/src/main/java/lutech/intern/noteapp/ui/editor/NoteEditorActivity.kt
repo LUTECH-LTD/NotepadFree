@@ -15,11 +15,13 @@ import com.github.dhaval2404.colorpicker.MaterialColorPickerDialog
 import com.github.dhaval2404.colorpicker.model.ColorShape
 import com.github.dhaval2404.colorpicker.model.ColorSwatch
 import lutech.intern.noteapp.R
+import lutech.intern.noteapp.common.NoteApplication
 import lutech.intern.noteapp.constant.Constants
 import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.databinding.ActivityNoteEditorBinding
 import lutech.intern.noteapp.ui.note.NotesFragment
 import lutech.intern.noteapp.utils.DrawableUtils
+import kotlin.math.log
 
 class NoteEditorActivity : AppCompatActivity() {
     private val binding by lazy { ActivityNoteEditorBinding.inflate(layoutInflater) }
@@ -123,9 +125,11 @@ class NoteEditorActivity : AppCompatActivity() {
                             .Builder(this)
                             .setTitle("Select color")
                             .setColorShape(ColorShape.SQAURE)
-                            .setColorSwatch(ColorSwatch._300)
+                            .setColorSwatch(ColorSwatch._200)
+                            .setColors(resources.getStringArray(R.array.themeColorHex))
                             .setDefaultColor(it.color)
                             .setColorListener { color, colorHex ->
+                                Log.e(Constants.TAG, "showPopupMenu: $colorHex", )
                                 noteEditorViewModel.update(
                                     Note(
                                         noteId = it.noteId,
@@ -135,21 +139,29 @@ class NoteEditorActivity : AppCompatActivity() {
                                         dateCreate = it.dateCreate
                                     )
                                 )
-                                // Update viewColor
-                                binding.main.setBackgroundColor(
-                                    DrawableUtils.darkenColor(
-                                        Color.parseColor(colorHex),
-                                        0.5f
+                                if(color == ContextCompat.getColor(this, R.color.color_beige)) {
+                                    // default color
+                                    binding.main.setBackgroundColor(ContextCompat.getColor(this, R.color.color_beige_medium))
+                                    binding.toolbar.setBackgroundColor(ContextCompat.getColor(this, R.color.color_brown))
+                                    binding.layoutEdit.setBackgroundResource(R.drawable.bg_beige_radius)
+                                } else {
+                                    // Update viewColor
+                                    binding.main.setBackgroundColor(
+                                        DrawableUtils.darkenColor(
+                                            Color.parseColor(colorHex),
+                                            0.5f
+                                        )
                                     )
-                                )
-                                binding.toolbar.setBackgroundColor(
-                                    DrawableUtils.darkenColor(
-                                        Color.parseColor(colorHex),
-                                        0.5f
+                                    binding.toolbar.setBackgroundColor(
+                                        DrawableUtils.darkenColor(
+                                            Color.parseColor(colorHex),
+                                            0.5f
+                                        )
                                     )
-                                )
-                                binding.layoutEdit.background =
-                                    DrawableUtils.createSolidDrawable(this, colorHex)
+                                    binding.layoutEdit.background =
+                                        DrawableUtils.createSolidDrawable(this, colorHex)
+                                }
+
                             }
                             .show()
                     }
