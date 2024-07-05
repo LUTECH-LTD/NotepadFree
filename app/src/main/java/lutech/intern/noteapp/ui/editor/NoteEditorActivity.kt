@@ -3,8 +3,6 @@ package lutech.intern.noteapp.ui.editor
 import android.app.AlertDialog
 import android.graphics.Color
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -29,6 +27,10 @@ import lutech.intern.noteapp.databinding.ActivityNoteEditorBinding
 import lutech.intern.noteapp.databinding.DialogSelectCategoryBinding
 import lutech.intern.noteapp.ui.note.NotesFragment
 import lutech.intern.noteapp.utils.DrawableUtils
+import java.io.BufferedWriter
+import java.io.File
+import java.io.FileOutputStream
+import java.io.OutputStreamWriter
 import java.util.Stack
 import kotlin.math.log
 

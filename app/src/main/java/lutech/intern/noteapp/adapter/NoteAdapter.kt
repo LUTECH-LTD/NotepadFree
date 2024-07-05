@@ -1,12 +1,15 @@
 package lutech.intern.noteapp.adapter
 
 import android.annotation.SuppressLint
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.adapter.CategoryAdapter.OnItemClickListener
+import lutech.intern.noteapp.constant.Constants
 import lutech.intern.noteapp.constant.SortOption
 import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.data.entity.Note
@@ -71,8 +74,7 @@ class NoteAdapter : RecyclerView.Adapter<NoteAdapter.NoteViewHolder>() {
                 binding.categoryNameTextView.text = null
             } else {
                 val maxCategoriesToShow = 4
-                val categoryNames =
-                    categories.take(maxCategoriesToShow).joinToString(", ") { it.name }
+                val categoryNames = categories.take(maxCategoriesToShow).joinToString(", ") { it.name }
                 val remainingCategoriesCount = categories.size - maxCategoriesToShow
 
                 val displayText = if (remainingCategoriesCount > 0) {

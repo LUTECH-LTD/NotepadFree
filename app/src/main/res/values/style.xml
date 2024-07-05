@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="AppTheme" parent="Theme.MaterialComponents.Light.NoActionBar">
+    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/color_brown</item>
         <item name="colorOnPrimary">@color/color_white</item>
+        <item name="colorOnSecondary">@color/color_white</item>
+
+        <item name="colorAccent">#6A5437</item>
+        <item name="actionMenuTextColor">@color/color_white</item>
+        <item name="colorOnSurfaceVariant">@color/color_white</item>
+
         <item name="android:statusBarColor">@color/color_black_medium</item>
         <item name="android:windowBackground">@color/color_beige_medium</item>
-        <item name="colorAccent">@color/color_brown</item>
-        <item name="actionMenuTextColor">@color/color_white</item>
     </style>
+
 </resources>

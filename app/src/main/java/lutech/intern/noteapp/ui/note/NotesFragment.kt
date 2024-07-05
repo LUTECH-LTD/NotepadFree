@@ -17,6 +17,7 @@ import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.data.entity.NoteWithCategories
 import lutech.intern.noteapp.data.entity.relations.NoteCategoryCrossRef
 import lutech.intern.noteapp.databinding.FragmentNotesBinding
+import lutech.intern.noteapp.event.SearchEvent
 import lutech.intern.noteapp.event.SortEvent
 import lutech.intern.noteapp.ui.editor.NoteEditorActivity
 import lutech.intern.noteapp.ui.main.MainActivity
@@ -99,6 +100,14 @@ class NotesFragment : Fragment() {
                 startActivity(intent)
             }
         })
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onSearchEvent(event: SearchEvent) {
+        val searchList = listData.filter {
+            it.note.title!!.lowercase().contains(event.query.lowercase())
+        }
+        noteAdapter.submitList(searchList, null)
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)

@@ -1,20 +1,25 @@
 package lutech.intern.noteapp.ui.main
 
 import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.RadioButton
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.core.view.GravityCompat
 import androidx.fragment.app.Fragment
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.constant.SortOption
+import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.databinding.ActivityMainBinding
 import lutech.intern.noteapp.databinding.DialogSortOptionsBinding
+import lutech.intern.noteapp.event.SearchEvent
 import lutech.intern.noteapp.event.SortEvent
 import lutech.intern.noteapp.ui.BackupActivity
 import lutech.intern.noteapp.ui.HelpActivity
@@ -24,6 +29,9 @@ import lutech.intern.noteapp.ui.SettingsActivity
 import lutech.intern.noteapp.ui.TrashFragment
 import lutech.intern.noteapp.ui.category.CategoriesFragment
 import org.greenrobot.eventbus.EventBus
+import java.io.BufferedWriter
+import java.io.FileOutputStream
+import java.io.OutputStreamWriter
 
 class MainActivity : AppCompatActivity() {
     private val binding by lazy { ActivityMainBinding.inflate(layoutInflater) }
@@ -172,6 +180,21 @@ class MainActivity : AppCompatActivity() {
         supportFragmentManager.findFragmentById(R.id.container)?.let { fragment ->
             if (fragment is NotesFragment) {
                 menuInflater.inflate(R.menu.menu_option_page_notes, menu)
+                val searchItem = menu!!.findItem(R.id.menu_search)
+                val searchView = searchItem.actionView as SearchView
+
+                searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+                    override fun onQueryTextSubmit(query: String?): Boolean {
+                        return true
+                    }
+
+                    override fun onQueryTextChange(newText: String?): Boolean {
+                        EventBus.getDefault().post(SearchEvent(newText ?: ""))
+                        return true
+                    }
+                })
+
+                return true
             }
         }
         return super.onCreateOptionsMenu(menu)
