@@ -6,7 +6,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.Toast
+import android.widget.RadioButton
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
@@ -15,20 +15,21 @@ import lutech.intern.noteapp.R
 import lutech.intern.noteapp.constant.SortOption
 import lutech.intern.noteapp.databinding.ActivityMainBinding
 import lutech.intern.noteapp.databinding.DialogSortOptionsBinding
+import lutech.intern.noteapp.event.SortEvent
 import lutech.intern.noteapp.ui.BackupActivity
 import lutech.intern.noteapp.ui.HelpActivity
 import lutech.intern.noteapp.ui.note.NotesFragment
 import lutech.intern.noteapp.ui.PrivacyPolicyActivity
 import lutech.intern.noteapp.ui.SettingsActivity
-import lutech.intern.noteapp.ui.SharedViewModel
 import lutech.intern.noteapp.ui.TrashFragment
 import lutech.intern.noteapp.ui.category.CategoriesFragment
+import org.greenrobot.eventbus.EventBus
 
 class MainActivity : AppCompatActivity() {
     private val binding by lazy { ActivityMainBinding.inflate(layoutInflater) }
     private val mainViewModel: MainViewModel by viewModels()
-    private val sharedViewModel: SharedViewModel by viewModels()
     private var selectedMenuItemId: Int? = null
+    private var sortOptionSelected = SortOption.EDIT_DATE_NEWEST.toString()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,6 +41,7 @@ class MainActivity : AppCompatActivity() {
             loadFragment(NotesFragment.newInstance(), getString(R.string.app_name), null)
             selectedMenuItemId = R.id.menu_notes
         }
+        EventBus.getDefault().post(SortEvent(sortOptionSelected))
     }
 
     private fun initViews() {
@@ -178,14 +180,40 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_sort -> {
-                var sortKey = SortOption.EDIT_DATE_OLDEST.toString()
                 val dialogBinding = DialogSortOptionsBinding.inflate(layoutInflater)
-
                 val builder = AlertDialog.Builder(this)
+                val idItem = when(sortOptionSelected) {
+                    SortOption.EDIT_DATE_NEWEST.toString() -> {
+                        R.id.radio_edit_date_newest
+                    }
+                    SortOption.EDIT_DATE_OLDEST.toString() -> {
+                        R.id.radio_edit_date_oldest
+                    }
+                    SortOption.CREATION_DATE_NEWEST.toString() -> {
+                        R.id.radio_creation_date_newest
+                    }
+                    SortOption.CREATION_DATE_OLDEST.toString() -> {
+                        R.id.radio_creation_date_oldest
+                    }
+                    SortOption.TITLE_A_Z.toString() -> {
+                        R.id.radio_title_a_z
+                    }
+                    SortOption.TITLE_Z_A.toString() -> {
+                        R.id.radio_title_z_a
+                    }
+                    SortOption.COLOR.toString() -> {
+                        R.id.radio_color
+                    }
+                    else -> {
+                        R.id.radio_edit_date_newest
+                    }
+                }
+                dialogBinding.sortGroup.findViewById<RadioButton>(idItem).isChecked = true
+
                 builder.apply {
                     setView(dialogBinding.root)
                     setPositiveButton(R.string.ok) { dialog, _ ->
-                        sharedViewModel.setSortType(sortKey)
+                        EventBus.getDefault().post(SortEvent(sortOptionSelected))
                     }
                     setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
                         dialog.dismiss()
@@ -206,37 +234,7 @@ class MainActivity : AppCompatActivity() {
                         R.id.radio_color -> SortOption.COLOR.toString()
                         else -> SortOption.EDIT_DATE_OLDEST.toString()
                     }
-                    sortKey = sortOption
-                }
-
-                sharedViewModel.sortType.observe(this) { sortOp ->
-                    val idItem = when(sortOp) {
-                        SortOption.EDIT_DATE_NEWEST.toString() -> {
-                            R.id.radio_edit_date_newest
-                        }
-                        SortOption.EDIT_DATE_OLDEST.toString() -> {
-                            R.id.radio_edit_date_oldest
-                        }
-                        SortOption.CREATION_DATE_NEWEST.toString() -> {
-                            R.id.radio_creation_date_newest
-                        }
-                        SortOption.CREATION_DATE_OLDEST.toString() -> {
-                            R.id.radio_creation_date_oldest
-                        }
-                        SortOption.TITLE_A_Z.toString() -> {
-                            R.id.radio_title_a_z
-                        }
-                        SortOption.TITLE_Z_A.toString() -> {
-                            R.id.radio_title_z_a
-                        }
-                        SortOption.COLOR.toString() -> {
-                            R.id.radio_color
-                        }
-                        else -> {
-                            R.id.radio_edit_date_newest
-                        }
-                    }
-                    dialogBinding.sortGroup.check(idItem)
+                    sortOptionSelected = sortOption
                 }
             }
         }

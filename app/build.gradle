@@ -57,4 +57,5 @@ dependencies {
     implementation libs.androidx.fragment.ktx // Or the latest version
     implementation libs.androidx.activity.ktx // Or the latest version
     implementation libs.colorpicker
+    implementation(libs.eventbus)
 }

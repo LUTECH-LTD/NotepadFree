@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.adapter.CategoryAdapter.OnItemClickListener
+import lutech.intern.noteapp.constant.SortOption
 import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.data.entity.NoteWithCategories
@@ -17,11 +18,13 @@ import lutech.intern.noteapp.utils.DrawableUtils
 class NoteAdapter : RecyclerView.Adapter<NoteAdapter.NoteViewHolder>() {
     private val noteWithCategories = mutableListOf<NoteWithCategories>()
     private var listener: OnItemClickListener? = null
+    private var sortOption: String? = null
 
     @SuppressLint("NotifyDataSetChanged")
-    fun submitList(noteWithCategories: List<NoteWithCategories>) {
+    fun submitList(noteWithCategories: List<NoteWithCategories>, sortOption: String?) {
         this.noteWithCategories.clear()
         this.noteWithCategories.addAll(noteWithCategories)
+        this.sortOption = sortOption
         notifyDataSetChanged()
     }
 
@@ -47,7 +50,17 @@ class NoteAdapter : RecyclerView.Adapter<NoteAdapter.NoteViewHolder>() {
                 } else {
                     noteWithCategories.note.title
                 }
-            binding.lastUpdateTextView.text = "Last edit: ${DateTimeUtils.getFormattedDateTime(noteWithCategories.note.lastUpdate!!)}"
+
+            sortOption?.let {
+                if(sortOption != SortOption.CREATION_DATE_NEWEST.toString() && sortOption != SortOption.CREATION_DATE_OLDEST.toString()) {
+                    binding.lastUpdateTextView.text = "Last edit: ${DateTimeUtils.getFormattedDateTime(noteWithCategories.note.lastUpdate!!)}"
+                } else {
+                    binding.lastUpdateTextView.text = "Created: ${DateTimeUtils.getFormattedDateTime(noteWithCategories.note.dateCreate!!)}"
+                }
+            } ?: run {
+                binding.lastUpdateTextView.text = "Last edit: ${DateTimeUtils.getFormattedDateTime(noteWithCategories.note.lastUpdate!!)}"
+            }
+
 
             val categories = noteWithCategories.categories
             if (categories.isEmpty()) {

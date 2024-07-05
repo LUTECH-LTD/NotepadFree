@@ -2,11 +2,11 @@ package lutech.intern.noteapp.ui.note
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import lutech.intern.noteapp.R
@@ -17,14 +17,17 @@ import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.data.entity.NoteWithCategories
 import lutech.intern.noteapp.data.entity.relations.NoteCategoryCrossRef
 import lutech.intern.noteapp.databinding.FragmentNotesBinding
-import lutech.intern.noteapp.ui.SharedViewModel
+import lutech.intern.noteapp.event.SortEvent
 import lutech.intern.noteapp.ui.editor.NoteEditorActivity
 import lutech.intern.noteapp.ui.main.MainActivity
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
+
 
 class NotesFragment : Fragment() {
     private val binding by lazy { FragmentNotesBinding.inflate(layoutInflater) }
     private val notesViewModel: NotesViewModel by viewModels()
-    private val sharedViewModel: SharedViewModel by activityViewModels()
     private val noteAdapter by lazy { NoteAdapter() }
     private var listData: List<NoteWithCategories> = emptyList()
 
@@ -63,7 +66,7 @@ class NotesFragment : Fragment() {
                     }
                 }
                 listData = listFilter
-                noteAdapter.submitList(listFilter)
+                noteAdapter.submitList(listFilter, null)
             }
         }
 
@@ -82,50 +85,11 @@ class NotesFragment : Fragment() {
                 startActivity(intent)
             }
         }
-
-        sharedViewModel.sortType.observe(viewLifecycleOwner) { sortOption ->
-            val listSort = when (sortOption) {
-                SortOption.EDIT_DATE_NEWEST.toString() -> {
-                    listData.sortedByDescending { it.note.lastUpdate }
-                }
-                SortOption.EDIT_DATE_OLDEST.toString() -> {
-                    listData.sortedBy { it.note.lastUpdate }
-                }
-                SortOption.CREATION_DATE_NEWEST.toString() -> {
-                    listData.sortedByDescending { it.note.dateCreate }
-                }
-                SortOption.CREATION_DATE_OLDEST.toString() -> {
-                    listData.sortedBy { it.note.dateCreate }
-                }
-                SortOption.TITLE_A_Z.toString() -> {
-                    listData.sortedBy { it.note.title?.lowercase()}
-                }
-                SortOption.TITLE_Z_A.toString() -> {
-                    listData.sortedByDescending { it.note.title?.lowercase() }
-                }
-                SortOption.COLOR.toString() -> {
-                    listData.sortedBy { it.note.color }
-                }
-                else -> {
-                    // Default sorting logic if no match
-                    listData // or any other default behavior
-                }
-            }
-            noteAdapter.submitList(listSort)
-        }
-
     }
 
     private fun handleEvent() {
         binding.addButton.setOnClickListener {
             notesViewModel.insert(Note(title = "", content = ""))
-//            notesViewModel.insert(Note(title = "Title", color = "#75A47F"))
-//            notesViewModel.insert(Note(title = "Title", color = "#E68369"))
-//            notesViewModel.insert(Note(title = "Title", color = "#508D4E"))
-//            notesViewModel.insert(Note(title = "Title", color = "#FCF8F3"))
-//            notesViewModel.insert(Note(title = "Title", color = "#96C9F4"))
-//            notesViewModel.insert(Note(title = "Title", color = "#E9C46A"))
-//            notesViewModel.insert(Note(title = "Title", color = "#FFB4C2"))
         }
 
         noteAdapter.setOnItemClickListener(object : NoteAdapter.OnItemClickListener {
@@ -135,6 +99,58 @@ class NotesFragment : Fragment() {
                 startActivity(intent)
             }
         })
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onSortOptionEvent(event: SortEvent) {
+        sortList(event.sortOption)
+    }
+
+    private fun sortList(sortOption: String) {
+        val sortedList = when (sortOption) {
+            SortOption.EDIT_DATE_NEWEST.toString() -> {
+                listData.sortedByDescending { it.note.lastUpdate }
+            }
+
+            SortOption.EDIT_DATE_OLDEST.toString() -> {
+                listData.sortedBy { it.note.lastUpdate }
+            }
+
+            SortOption.CREATION_DATE_NEWEST.toString() -> {
+                listData.sortedByDescending { it.note.dateCreate }
+            }
+
+            SortOption.CREATION_DATE_OLDEST.toString() -> {
+                listData.sortedBy { it.note.dateCreate }
+            }
+
+            SortOption.TITLE_A_Z.toString() -> {
+                listData.sortedBy { it.note.title?.lowercase() }
+            }
+
+            SortOption.TITLE_Z_A.toString() -> {
+                listData.sortedByDescending { it.note.title?.lowercase() }
+            }
+
+            SortOption.COLOR.toString() -> {
+                listData.sortedBy { it.note.color }
+            }
+
+            else -> {
+                listData
+            }
+        }
+        noteAdapter.submitList(sortedList, sortOption)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        EventBus.getDefault().register(this)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        EventBus.getDefault().unregister(this)
     }
 
     companion object {
