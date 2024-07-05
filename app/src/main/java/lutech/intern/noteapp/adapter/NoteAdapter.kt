@@ -45,20 +45,24 @@ class NoteAdapter : RecyclerView.Adapter<NoteAdapter.NoteViewHolder>() {
 
     inner class NoteViewHolder(private val binding: ItemNoteBinding) : ViewHolder(binding.root) {
         fun onBind(noteWithCategories: NoteWithCategories) {
-            binding.titleTextView.text = if (noteWithCategories.note.title == null || noteWithCategories.note.title == "") {
+            binding.titleTextView.text =
+                if (noteWithCategories.note.title == null || noteWithCategories.note.title == "") {
                     itemView.context.getString(R.string.untitled)
                 } else {
                     noteWithCategories.note.title
                 }
 
             sortOption?.let {
-                if(sortOption != SortOption.CREATION_DATE_NEWEST.toString() && sortOption != SortOption.CREATION_DATE_OLDEST.toString()) {
-                    binding.lastUpdateTextView.text = "Last edit: ${DateTimeUtils.getFormattedDateTime(noteWithCategories.note.lastUpdate!!)}"
+                if (sortOption != SortOption.CREATION_DATE_NEWEST.toString() && sortOption != SortOption.CREATION_DATE_OLDEST.toString()) {
+                    binding.lastUpdateTextView.text =
+                        "Last edit: ${DateTimeUtils.getFormattedDateTime(noteWithCategories.note.lastUpdate!!)}"
                 } else {
-                    binding.lastUpdateTextView.text = "Created: ${DateTimeUtils.getFormattedDateTime(noteWithCategories.note.dateCreate!!)}"
+                    binding.lastUpdateTextView.text =
+                        "Created: ${DateTimeUtils.getFormattedDateTime(noteWithCategories.note.dateCreate!!)}"
                 }
             } ?: run {
-                binding.lastUpdateTextView.text = "Last edit: ${DateTimeUtils.getFormattedDateTime(noteWithCategories.note.lastUpdate!!)}"
+                binding.lastUpdateTextView.text =
+                    "Last edit: ${DateTimeUtils.getFormattedDateTime(noteWithCategories.note.lastUpdate!!)}"
             }
 
 
@@ -66,7 +70,18 @@ class NoteAdapter : RecyclerView.Adapter<NoteAdapter.NoteViewHolder>() {
             if (categories.isEmpty()) {
                 binding.categoryNameTextView.text = null
             } else {
-                binding.categoryNameTextView.text = categories.joinToString(", ") { it.name }
+                val maxCategoriesToShow = 4
+                val categoryNames =
+                    categories.take(maxCategoriesToShow).joinToString(", ") { it.name }
+                val remainingCategoriesCount = categories.size - maxCategoriesToShow
+
+                val displayText = if (remainingCategoriesCount > 0) {
+                    "$categoryNames (+$remainingCategoriesCount)"
+                } else {
+                    categoryNames
+                }
+
+                binding.categoryNameTextView.text = displayText
             }
 
             binding.main.background = DrawableUtils.createGradientDrawable(

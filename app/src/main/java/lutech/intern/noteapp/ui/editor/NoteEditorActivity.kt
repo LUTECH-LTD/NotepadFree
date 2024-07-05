@@ -1,5 +1,6 @@
 package lutech.intern.noteapp.ui.editor
 
+import android.app.AlertDialog
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
@@ -15,10 +16,15 @@ import com.github.dhaval2404.colorpicker.MaterialColorPickerDialog
 import com.github.dhaval2404.colorpicker.model.ColorShape
 import com.github.dhaval2404.colorpicker.model.ColorSwatch
 import lutech.intern.noteapp.R
+import lutech.intern.noteapp.adapter.CategorySelectedAdapter
 import lutech.intern.noteapp.common.NoteApplication
 import lutech.intern.noteapp.constant.Constants
+import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.data.entity.Note
+import lutech.intern.noteapp.data.entity.NoteWithCategories
+import lutech.intern.noteapp.data.entity.relations.NoteCategoryCrossRef
 import lutech.intern.noteapp.databinding.ActivityNoteEditorBinding
+import lutech.intern.noteapp.databinding.DialogSelectCategoryBinding
 import lutech.intern.noteapp.ui.note.NotesFragment
 import lutech.intern.noteapp.utils.DrawableUtils
 import kotlin.math.log
@@ -26,11 +32,29 @@ import kotlin.math.log
 class NoteEditorActivity : AppCompatActivity() {
     private val binding by lazy { ActivityNoteEditorBinding.inflate(layoutInflater) }
     private val noteEditorViewModel: NoteEditorViewModel by viewModels()
+    private var categories: List<Category> = emptyList()
+    private var noteCategories: List<Category> = emptyList()
+    private val categorySelectedAdapter by lazy {
+        CategorySelectedAdapter()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         initViews()
+
+        noteEditorViewModel.categories.observe(this) { categories ->
+            this.categories = categories
+            noteEditorViewModel.noteWithCategories.observe(this) { noteWithCategories ->
+                val currentId = getNoteFormIntent()?.noteId
+                val noteWithCategoriesFilter: List<NoteWithCategories> =
+                    noteWithCategories.filter { it.note.noteId == currentId }
+                this.noteCategories = noteWithCategoriesFilter[0].categories
+
+                categorySelectedAdapter.submitList(categories, noteCategories)
+            }
+        }
+
     }
 
     private fun initViews() {
@@ -51,7 +75,6 @@ class NoteEditorActivity : AppCompatActivity() {
             binding.titleEditText.setText(it.title)
             binding.textEditText.setText(it.content)
             if (Color.parseColor(it.color) == ContextCompat.getColor(this, R.color.color_beige)) {
-                Log.e(Constants.TAG, "Color default")
             } else {
                 binding.main.setBackgroundColor(
                     DrawableUtils.darkenColor(
@@ -114,7 +137,54 @@ class NoteEditorActivity : AppCompatActivity() {
         popupMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.menu_categorize -> {
-                    Toast.makeText(this, "menu_categorize", Toast.LENGTH_SHORT).show()
+                    if (categories.isEmpty()) {
+                        val builder = AlertDialog.Builder(this)
+                        builder.apply {
+                            setMessage("Categories can be added in the app's menu. To open the menu use menu in the top left corner off the note list screen.")
+                            setPositiveButton(R.string.ok) { _, _ ->
+                            }
+                        }
+
+                        val dialog = builder.create()
+                        dialog.show()
+                    } else {
+                        val mapDataToUpdate: MutableMap<Long, Boolean> = mutableMapOf()
+                        categorySelectedAdapter.setOnCheckedChange { category, isChecked ->
+                            mapDataToUpdate[category.categoryId] = isChecked
+                        }
+
+                        val dialogBinding = DialogSelectCategoryBinding.inflate(layoutInflater)
+                        dialogBinding.categoriesRecyclerView.adapter = categorySelectedAdapter
+                        val builder = AlertDialog.Builder(this)
+                        builder.apply {
+                            setView(dialogBinding.root)
+                            setPositiveButton(R.string.ok) { _, _ ->
+                                // Handel event
+                                mapDataToUpdate.forEach { (categoryId, isChecked) ->
+                                    Log.e(Constants.TAG, "showPopupMenu: $categoryId, $isChecked")
+                                    val currentId = getNoteFormIntent()?.noteId
+
+                                    if (isChecked) {
+                                        noteEditorViewModel.insertNoteCategoryCrossRef(
+                                            NoteCategoryCrossRef(
+                                                currentId!!,
+                                                categoryId
+                                            )
+                                        )
+                                    } else {
+                                        noteEditorViewModel.deleteNoteCategoryCrossRef(
+                                            currentId!!,
+                                            categoryId
+                                        )
+                                    }
+                                }
+                                Toast.makeText(this@NoteEditorActivity, "Update success", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+
+                        val dialog = builder.create()
+                        dialog.show()
+                    }
                     true
                 }
 
@@ -129,7 +199,7 @@ class NoteEditorActivity : AppCompatActivity() {
                             .setColors(resources.getStringArray(R.array.themeColorHex))
                             .setDefaultColor(it.color)
                             .setColorListener { color, colorHex ->
-                                Log.e(Constants.TAG, "showPopupMenu: $colorHex", )
+                                Log.e(Constants.TAG, "showPopupMenu: $colorHex")
                                 noteEditorViewModel.update(
                                     Note(
                                         noteId = it.noteId,
@@ -139,10 +209,20 @@ class NoteEditorActivity : AppCompatActivity() {
                                         dateCreate = it.dateCreate
                                     )
                                 )
-                                if(color == ContextCompat.getColor(this, R.color.color_beige)) {
+                                if (color == ContextCompat.getColor(this, R.color.color_beige)) {
                                     // default color
-                                    binding.main.setBackgroundColor(ContextCompat.getColor(this, R.color.color_beige_medium))
-                                    binding.toolbar.setBackgroundColor(ContextCompat.getColor(this, R.color.color_brown))
+                                    binding.main.setBackgroundColor(
+                                        ContextCompat.getColor(
+                                            this,
+                                            R.color.color_beige_medium
+                                        )
+                                    )
+                                    binding.toolbar.setBackgroundColor(
+                                        ContextCompat.getColor(
+                                            this,
+                                            R.color.color_brown
+                                        )
+                                    )
                                     binding.layoutEdit.setBackgroundResource(R.drawable.bg_beige_radius)
                                 } else {
                                     // Update viewColor

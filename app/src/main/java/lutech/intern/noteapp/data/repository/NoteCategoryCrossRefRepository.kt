@@ -7,4 +7,8 @@ class NoteCategoryCrossRefRepository(private val noteCategoryCrossRefDao: NoteCa
     suspend fun insert(noteCategoryCrossRef: NoteCategoryCrossRef) {
         noteCategoryCrossRefDao.insert(noteCategoryCrossRef)
     }
+
+    suspend fun delete(noteId: Long, categoryId: Long) {
+        noteCategoryCrossRefDao.delete(noteId, categoryId)
+    }
 }
