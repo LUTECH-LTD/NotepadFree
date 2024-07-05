@@ -3,6 +3,8 @@ package lutech.intern.noteapp.ui.editor
 import android.app.AlertDialog
 import android.graphics.Color
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -27,6 +29,7 @@ import lutech.intern.noteapp.databinding.ActivityNoteEditorBinding
 import lutech.intern.noteapp.databinding.DialogSelectCategoryBinding
 import lutech.intern.noteapp.ui.note.NotesFragment
 import lutech.intern.noteapp.utils.DrawableUtils
+import java.util.Stack
 import kotlin.math.log
 
 class NoteEditorActivity : AppCompatActivity() {
@@ -122,6 +125,10 @@ class NoteEditorActivity : AppCompatActivity() {
                 return true
             }
 
+            R.id.menu_undo -> {
+                return true
+            }
+
             R.id.menu_more -> {
                 showPopupMenu(findViewById(item.itemId))
                 return true
@@ -142,6 +149,7 @@ class NoteEditorActivity : AppCompatActivity() {
                         builder.apply {
                             setMessage("Categories can be added in the app's menu. To open the menu use menu in the top left corner off the note list screen.")
                             setPositiveButton(R.string.ok) { _, _ ->
+
                             }
                         }
 
@@ -178,7 +186,11 @@ class NoteEditorActivity : AppCompatActivity() {
                                         )
                                     }
                                 }
-                                Toast.makeText(this@NoteEditorActivity, "Update success", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    this@NoteEditorActivity,
+                                    "Update success",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
 
@@ -245,6 +257,10 @@ class NoteEditorActivity : AppCompatActivity() {
                             }
                             .show()
                     }
+                    true
+                }
+
+                R.id.menu_delete -> {
                     true
                 }
 

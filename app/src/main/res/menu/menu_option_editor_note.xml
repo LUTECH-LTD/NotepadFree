@@ -7,7 +7,7 @@
         app:showAsAction="ifRoom|collapseActionView" />
 
     <item
-        android:id="@+id/menu_sort"
+        android:id="@+id/menu_undo"
         android:title="Undo"
         app:showAsAction="ifRoom|collapseActionView" />
 
