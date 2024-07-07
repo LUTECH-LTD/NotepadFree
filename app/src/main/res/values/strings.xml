@@ -30,6 +30,8 @@
     <string name="enter_title">Enter title...</string>
     <string name="enter_text">Enter text...</string>
     <string name="untitled">Untitled</string>
+    <string name="last_edit">Last edit: </string>
+    <string name="created">Created: </string>
 
     <string-array name="themeColorHex">
         <item>#F9F8C0</item>

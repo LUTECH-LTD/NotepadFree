@@ -1,6 +1,6 @@
 package lutech.intern.noteapp.constant
 
-enum class SortOption {
+enum class SortNoteMode {
     EDIT_DATE_NEWEST,
     EDIT_DATE_OLDEST,
     CREATION_DATE_NEWEST,

@@ -5,7 +5,7 @@
         android:icon="@drawable/ic_note"
         android:title="@string/notes" />
 
-    <item android:id="@+id/menu_categories"
+    <item android:id="@+id/group_categories"
         android:title="Categories">
         <menu>
 <!--            <item-->

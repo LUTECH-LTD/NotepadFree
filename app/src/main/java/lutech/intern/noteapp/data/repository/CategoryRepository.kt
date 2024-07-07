@@ -9,19 +9,15 @@ class CategoryRepository(private val categoryDao: CategoryDao) {
         return categoryDao.fetchAllCategories()
     }
 
-    suspend fun insert(category: Category) {
-        categoryDao.insert(category)
+    suspend fun insert(category: Category): Boolean {
+        return categoryDao.getCategoryByName(category.name) == null && categoryDao.insert(category) != -1L
     }
 
-    suspend fun update(category: Category) {
-        categoryDao.update(category)
+    suspend fun update(category: Category): Boolean {
+        return categoryDao.getCategoryByName(category.name) == null && categoryDao.update(category) > 0
     }
 
     suspend fun delete(category: Category) {
         categoryDao.delete(category)
-    }
-
-    fun isCategoryNameExists(name: String): Boolean {
-        return categoryDao.getCategoryByName(name) != null
     }
 }

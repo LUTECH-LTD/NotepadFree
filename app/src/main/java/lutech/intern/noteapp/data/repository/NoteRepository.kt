@@ -26,7 +26,7 @@ class NoteRepository(private val noteDao: NoteDao) {
         noteDao.delete(note)
     }
 
-    suspend fun fetchNoteById(noteId: Long): Note? {
-        return noteDao.fetchNoteById(noteId)
+    suspend fun getNoteById(noteId: Long): Note? {
+        return noteDao.getNoteById(noteId)
     }
 }

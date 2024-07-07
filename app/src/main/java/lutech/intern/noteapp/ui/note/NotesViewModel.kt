@@ -19,6 +19,7 @@ class NotesViewModel : ViewModel() {
             NoteDatabase.getDatabase(NoteApplication.context).noteDao()
         )
     }
+
     private val noteCategoryCrossRepository by lazy {
         NoteCategoryCrossRefRepository(
             NoteDatabase.getDatabase(NoteApplication.context).noteCategoryCrossRefDao()
@@ -26,15 +27,17 @@ class NotesViewModel : ViewModel() {
     }
 
     val noteWithCategories: LiveData<List<NoteWithCategories>> = noteRepository.fetchNoteWithCategories()
-    private val _lastInsertedNote = MutableLiveData<Note>()
-    val lastInsertedNote = _lastInsertedNote
 
-    fun insert(note: Note) = viewModelScope.launch {
+    fun insert(note: Note, callback: (Note) -> Unit) = viewModelScope.launch {
         val noteId = noteRepository.insert(note)
-        val noteWithNoteId = noteRepository.fetchNoteById(noteId)
+        val noteWithNoteId = noteRepository.getNoteById(noteId)
         noteWithNoteId?.let {
-            _lastInsertedNote.value = it
+            callback(it)
         }
+    }
+
+    fun deleteNote(note: Note) = viewModelScope.launch {
+        noteRepository.delete(note)
     }
 
     fun insertNoteCategoryCrossRef(noteCategoryCrossRef: NoteCategoryCrossRef) = viewModelScope.launch {

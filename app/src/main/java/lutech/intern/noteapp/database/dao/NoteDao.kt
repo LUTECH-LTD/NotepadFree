@@ -30,5 +30,5 @@ interface NoteDao {
     fun getNoteWithCategories(): LiveData<List<NoteWithCategories>>
 
     @Query("SELECT * FROM Note WHERE noteId = :noteId")
-    suspend fun fetchNoteById(noteId: Long): Note?
+    suspend fun getNoteById(noteId: Long): Note?
 }

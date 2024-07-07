@@ -7,7 +7,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.adapter.CategoryAdapter
 import lutech.intern.noteapp.data.entity.Category
@@ -29,7 +28,7 @@ class CategoriesFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initViews()
-        observeDataViewModel()
+        observeCategoriesUpdate()
         handleEvent()
     }
 
@@ -41,26 +40,14 @@ class CategoriesFragment : Fragment() {
         binding.categoriesRecyclerView.adapter = categoryAdapter
     }
 
-    private fun observeDataViewModel() {
+    private fun observeCategoriesUpdate() {
         categoryViewModel.categories.observe(viewLifecycleOwner) { categories ->
             categoryAdapter.submitCategories(categories)
-        }
-
-        categoryViewModel.insertResult.observe(viewLifecycleOwner) { isSuccess ->
-            if (isSuccess) {
-                binding.nameEditText.text?.clear()
-            }
         }
     }
 
     private fun handleEvent() {
-        binding.addButton.setOnClickListener {
-            val name = binding.nameEditText.text.toString().trim()
-            if (name.isNotEmpty()) {
-                categoryViewModel.insert(Category(name = name))
-            }
-        }
-
+        binding.addButton.setOnClickListener { insertCategory() }
         categoryAdapter.setOnItemClickListener(object : CategoryAdapter.OnItemClickListener {
             override fun onEditButtonListener(category: Category) {
                 showEditCategoryDialog(category)
@@ -70,11 +57,25 @@ class CategoriesFragment : Fragment() {
                 showConfirmDeleteCategoryDialog(category)
             }
         })
+
+    }
+
+    private fun insertCategory() {
+        val name = binding.nameEditText.text.toString().trim()
+        if (name.isEmpty()) {
+            return
+        }
+
+        val category = Category(name = name)
+        categoryViewModel.insert(category) { isInsertSuccessful ->
+            if (isInsertSuccessful) {
+                binding.nameEditText.text?.clear()
+            }
+        }
     }
 
     private fun showEditCategoryDialog(category: Category) {
         val dialogBinding = DialogEditCategoryBinding.inflate(layoutInflater)
-        dialogBinding.nameEditText.setText(category.name)
 
         val builder = AlertDialog.Builder(requireContext())
         builder.apply {
@@ -88,30 +89,30 @@ class CategoriesFragment : Fragment() {
         val dialog = builder.create()
         dialog.show()
 
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            val newName = dialogBinding.nameEditText.text.toString().trim()
-            if (newName.isNotEmpty()) {
-                categoryViewModel.update(Category(category.categoryId, newName))
+        dialogBinding.nameEditText.setText(category.name)
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener { updateCategory(dialogBinding, category, dialog) }
+    }
+
+    private fun updateCategory(
+        dialogBinding: DialogEditCategoryBinding,
+        category: Category,
+        dialog: AlertDialog
+    ) {
+        val newName = dialogBinding.nameEditText.text.toString().trim()
+
+        if (newName.isEmpty()) {
+            dialogBinding.messageError.visibility = View.VISIBLE
+            return
+        }
+
+        val categoryToUpdate = Category(category.categoryId, newName)
+        categoryViewModel.update(categoryToUpdate) { isUpdateSuccessful ->
+            if (isUpdateSuccessful) {
+                dialog.dismiss()
+                dialogBinding.messageError.visibility = View.GONE
             } else {
                 dialogBinding.messageError.visibility = View.VISIBLE
             }
-        }
-
-        val observeUpdateInsert = Observer<Boolean?> { isSuccess ->
-            isSuccess?.let {
-                if (it) {
-                    dialog.dismiss()
-                    dialogBinding.messageError.visibility = View.GONE
-                } else {
-                    dialogBinding.messageError.visibility = View.VISIBLE
-                }
-                categoryViewModel.resetUpdateResult()
-            }
-        }
-        categoryViewModel.updateResult.observe(viewLifecycleOwner, observeUpdateInsert)
-
-        dialog.setOnDismissListener {
-            categoryViewModel.updateResult.removeObserver(observeUpdateInsert)
         }
     }
 
@@ -120,7 +121,7 @@ class CategoriesFragment : Fragment() {
         builder.apply {
             setMessage("Delete category '${category.name}'? Notes from the category won't be deleted.")
             setPositiveButton(R.string.ok) { _, _ ->
-                categoryViewModel.delete(category)
+                deleteCategory(category)
             }
             setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
                 dialog.dismiss()
@@ -129,6 +130,10 @@ class CategoriesFragment : Fragment() {
 
         val dialog = builder.create()
         dialog.show()
+    }
+
+    private fun deleteCategory(category: Category) {
+        categoryViewModel.delete(category)
     }
 
     companion object {

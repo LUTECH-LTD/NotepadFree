@@ -14,9 +14,9 @@ data class Note(
     @ColumnInfo(name = "noteId")
     val noteId: Long = 0L,
     @ColumnInfo(name = "title")
-    val title: String? = null,
+    val title: String = "",
     @ColumnInfo(name = "content")
-    val content: String? = null,
+    val content: String = "",
     @ColumnInfo(name = "color")
     val color: String = String.format("#%06X", 0xFFFFFF and ContextCompat.getColor(NoteApplication.context, R.color.color_beige)),
     @ColumnInfo(name = "dateCreate")
