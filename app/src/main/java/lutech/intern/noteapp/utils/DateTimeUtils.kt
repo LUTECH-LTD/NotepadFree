@@ -6,7 +6,7 @@ import java.util.Locale
 
 object DateTimeUtils {
     fun getFormattedDateTime(timestamp: Long): String {
-        val dateFormat = SimpleDateFormat("dd/MM/yyyy, HH:mm", Locale.getDefault())
+        val dateFormat = SimpleDateFormat("dd/MM/yyyy, HH:mm:ss", Locale.getDefault())
         return dateFormat.format(Date(timestamp))
     }
 }

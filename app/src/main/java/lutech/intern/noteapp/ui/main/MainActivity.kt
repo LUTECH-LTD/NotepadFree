@@ -23,6 +23,7 @@ import lutech.intern.noteapp.constant.SortNoteMode
 import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.databinding.ActivityMainBinding
 import lutech.intern.noteapp.databinding.DialogSortOptionsBinding
+import lutech.intern.noteapp.event.CategorizeNoteChangeEvent
 import lutech.intern.noteapp.event.ClearNotesSelectedEvent
 import lutech.intern.noteapp.event.ColorizeNoteEvent
 import lutech.intern.noteapp.event.DeleteNoteEvent
@@ -338,10 +339,16 @@ class MainActivity : AppCompatActivity() {
                     return true
                 }
 
+                R.id.menu_categorize -> {
+                    EventBus.getDefault().post(CategorizeNoteChangeEvent())
+                    return true
+                }
+
                 R.id.menu_colorize -> {
                     EventBus.getDefault().post(ColorizeNoteEvent())
                     return true
                 }
+
                 else -> return false
             }
         }

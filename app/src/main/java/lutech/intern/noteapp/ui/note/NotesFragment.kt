@@ -1,5 +1,6 @@
 package lutech.intern.noteapp.ui.note
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -13,6 +14,7 @@ import com.github.dhaval2404.colorpicker.MaterialColorPickerDialog
 import com.github.dhaval2404.colorpicker.model.ColorShape
 import com.github.dhaval2404.colorpicker.model.ColorSwatch
 import lutech.intern.noteapp.R
+import lutech.intern.noteapp.adapter.CategorySelectionAdapter
 import lutech.intern.noteapp.adapter.NoteAdapter
 import lutech.intern.noteapp.common.PreferencesManager
 import lutech.intern.noteapp.constant.Constants
@@ -20,7 +22,9 @@ import lutech.intern.noteapp.constant.SortNoteMode
 import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.data.entity.NoteWithCategories
 import lutech.intern.noteapp.data.entity.relations.NoteCategoryCrossRef
+import lutech.intern.noteapp.databinding.DialogSelectCategoryBinding
 import lutech.intern.noteapp.databinding.FragmentNotesBinding
+import lutech.intern.noteapp.event.CategorizeNoteChangeEvent
 import lutech.intern.noteapp.event.ClearNotesSelectedEvent
 import lutech.intern.noteapp.event.ColorizeNoteEvent
 import lutech.intern.noteapp.event.DeleteNoteEvent
@@ -39,6 +43,7 @@ class NotesFragment : Fragment() {
     private val notesViewModel: NotesViewModel by viewModels()
     private val noteAdapter by lazy { NoteAdapter(requireContext()) }
     private var notes: List<NoteWithCategories> = emptyList()
+    private val categorySelectionAdapter by lazy { CategorySelectionAdapter() }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -66,6 +71,10 @@ class NotesFragment : Fragment() {
         notesViewModel.noteWithCategories.observe(viewLifecycleOwner) { list ->
             notes = list
             reloadData()
+        }
+
+        notesViewModel.categories.observe(viewLifecycleOwner) { list ->
+            categorySelectionAdapter.submitList(list)
         }
     }
 
@@ -232,6 +241,54 @@ class NotesFragment : Fragment() {
                     (activity as MainActivity).finishActionMode()
                 }
                 .show()
+        }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onCategorizeNoteChangeEvent(event: CategorizeNoteChangeEvent) {
+        val selectedCategories = categorySelectionAdapter.getSelectedCategories()
+        val selectedNotes = noteAdapter.getSelectedNotes()
+        if(selectedNotes.isNotEmpty()){
+
+            if(categorySelectionAdapter.getCategories().isEmpty()) {
+                val builder = AlertDialog.Builder(requireContext())
+                builder.apply {
+                    setMessage("Categories can be added in the app's menu. To open the menu use menu in the top left corner off the note list screen.")
+                    setPositiveButton(R.string.ok) { _, _ ->
+
+                    }
+                }
+
+                val dialog = builder.create()
+                dialog.show()
+                return
+            }
+
+            val dialogBinding = DialogSelectCategoryBinding.inflate(layoutInflater)
+            dialogBinding.categoriesRecyclerView.adapter = categorySelectionAdapter
+            val builder = AlertDialog.Builder(requireContext())
+            builder.apply {
+                setView(dialogBinding.root)
+                setPositiveButton(R.string.ok) { _, _ ->
+                    if(selectedCategories.isNotEmpty()) {
+                        selectedNotes.forEach { note ->
+                            selectedCategories.forEach { category ->
+                                notesViewModel.insertNoteCategoryCrossRef(
+                                    NoteCategoryCrossRef(noteId = note.noteId, categoryId = category.categoryId)
+                                )
+                            }
+                        }
+                    }
+                    (activity as MainActivity).finishActionMode()
+                }
+            }
+
+            val dialog = builder.create()
+            dialog.show()
+
+            dialog.setOnDismissListener {
+                categorySelectionAdapter.clearSelectedCategories()
+            }
         }
     }
 
