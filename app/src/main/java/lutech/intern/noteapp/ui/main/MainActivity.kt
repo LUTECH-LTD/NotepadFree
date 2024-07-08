@@ -27,6 +27,8 @@ import lutech.intern.noteapp.event.CategorizeNoteChangeEvent
 import lutech.intern.noteapp.event.ClearNotesSelectedEvent
 import lutech.intern.noteapp.event.ColorizeNoteEvent
 import lutech.intern.noteapp.event.DeleteNoteEvent
+import lutech.intern.noteapp.event.ExportFileEvent
+import lutech.intern.noteapp.event.ImportFileEvent
 import lutech.intern.noteapp.event.LoadNotesEvent
 import lutech.intern.noteapp.event.SearchNoteEvent
 import lutech.intern.noteapp.event.SelectedAllNotesEvent
@@ -255,11 +257,13 @@ class MainActivity : AppCompatActivity() {
             }
 
             R.id.menu_import -> {
-                Toast.makeText(this, "Import file", Toast.LENGTH_SHORT).show()
+                EventBus.getDefault().post(ImportFileEvent())
+                return true
             }
 
             R.id.menu_export -> {
-                Toast.makeText(this, "Export file", Toast.LENGTH_SHORT).show()
+                EventBus.getDefault().post(ExportFileEvent())
+                return true
             }
         }
         return super.onOptionsItemSelected(item)
@@ -346,6 +350,11 @@ class MainActivity : AppCompatActivity() {
 
                 R.id.menu_colorize -> {
                     EventBus.getDefault().post(ColorizeNoteEvent())
+                    return true
+                }
+
+                R.id.menu_export -> {
+                    EventBus.getDefault().post(ExportFileEvent())
                     return true
                 }
 

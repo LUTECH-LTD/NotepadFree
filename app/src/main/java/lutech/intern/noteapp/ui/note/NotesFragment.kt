@@ -8,6 +8,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.github.dhaval2404.colorpicker.MaterialColorPickerDialog
@@ -28,11 +30,14 @@ import lutech.intern.noteapp.event.CategorizeNoteChangeEvent
 import lutech.intern.noteapp.event.ClearNotesSelectedEvent
 import lutech.intern.noteapp.event.ColorizeNoteEvent
 import lutech.intern.noteapp.event.DeleteNoteEvent
+import lutech.intern.noteapp.event.ExportFileEvent
+import lutech.intern.noteapp.event.ImportFileEvent
 import lutech.intern.noteapp.event.LoadNotesEvent
 import lutech.intern.noteapp.event.SearchNoteEvent
 import lutech.intern.noteapp.event.SelectedAllNotesEvent
 import lutech.intern.noteapp.ui.editor.NoteEditorActivity
 import lutech.intern.noteapp.ui.main.MainActivity
+import lutech.intern.noteapp.utils.FileManager
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -44,6 +49,39 @@ class NotesFragment : Fragment() {
     private val noteAdapter by lazy { NoteAdapter(requireContext()) }
     private var notes: List<NoteWithCategories> = emptyList()
     private val categorySelectionAdapter by lazy { CategorySelectionAdapter() }
+
+    private val openDocumentTreeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == AppCompatActivity.RESULT_OK) {
+            result.data?.data?.let { uri ->
+                // Export file vào máy
+                if(!noteAdapter.isSelectedMode()) {
+                    noteAdapter.getNoteWithCategories().forEach {
+                        FileManager(requireContext()).exportFileToFolder(uri, it.note.title, it.note.content)
+                    }
+                } else {
+                    if(noteAdapter.getSelectedNotes().isNotEmpty()) {
+                        noteAdapter.getSelectedNotes().forEach {
+                            FileManager(requireContext()).exportFileToFolder(uri, it.title, it.content)
+                        }
+                    }
+                }
+                (activity as MainActivity).finishActionMode()
+            }
+        }
+    }
+
+    private val openDocumentLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == AppCompatActivity.RESULT_OK) {
+            result.data?.data?.let { uri ->
+                val note =  FileManager(requireContext()).importFileFromFolder(uri)
+                note?.let {
+                    notesViewModel.insert(note) {}
+                }
+            }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -290,6 +328,21 @@ class NotesFragment : Fragment() {
                 categorySelectionAdapter.clearSelectedCategories()
             }
         }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onExportFileEvent(event: ExportFileEvent) {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        openDocumentTreeLauncher.launch(intent)
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onImportFileEvent(event: ImportFileEvent) {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "text/plain"
+        }
+        openDocumentLauncher.launch(intent)
     }
 
 
