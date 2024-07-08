@@ -2,12 +2,16 @@ package lutech.intern.noteapp.ui.note
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import com.github.dhaval2404.colorpicker.MaterialColorPickerDialog
+import com.github.dhaval2404.colorpicker.model.ColorShape
+import com.github.dhaval2404.colorpicker.model.ColorSwatch
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.adapter.NoteAdapter
 import lutech.intern.noteapp.common.PreferencesManager
@@ -18,6 +22,7 @@ import lutech.intern.noteapp.data.entity.NoteWithCategories
 import lutech.intern.noteapp.data.entity.relations.NoteCategoryCrossRef
 import lutech.intern.noteapp.databinding.FragmentNotesBinding
 import lutech.intern.noteapp.event.ClearNotesSelectedEvent
+import lutech.intern.noteapp.event.ColorizeNoteEvent
 import lutech.intern.noteapp.event.DeleteNoteEvent
 import lutech.intern.noteapp.event.LoadNotesEvent
 import lutech.intern.noteapp.event.SearchNoteEvent
@@ -27,6 +32,7 @@ import lutech.intern.noteapp.ui.main.MainActivity
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import java.util.Collections
 
 class NotesFragment : Fragment() {
     private val binding by lazy { FragmentNotesBinding.inflate(layoutInflater) }
@@ -92,6 +98,9 @@ class NotesFragment : Fragment() {
 
     private fun reloadData() {
         noteAdapter.submitList(filterAndSortNotes(notes))
+        (activity as MainActivity).currentSearchQuery?.let {
+            EventBus.getDefault().post(SearchNoteEvent(it))
+        }
     }
 
     private fun handleEvent() {
@@ -119,7 +128,6 @@ class NotesFragment : Fragment() {
                     (activity as MainActivity).openActionMode()
                     (activity as MainActivity).setTitleActionMode(noteAdapter.getSelectedNotesCount().toString())
                 } else {
-                    binding.addButton.visibility = View.GONE
                     launcherNoteEditorActivity(note)
                 }
             }
@@ -159,10 +167,7 @@ class NotesFragment : Fragment() {
                         notesViewModel.deleteNote(it)
                     }
                     Toast.makeText(requireContext(), "Delete notes (${list.size})", Toast.LENGTH_SHORT).show()
-                    noteAdapter.clearSelectedNotes()
-                    noteAdapter.setSelectedMode(false)
                     (activity as MainActivity).finishActionMode()
-                    binding.addButton.visibility = View.VISIBLE
                 }
                 setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
                     dialog.dismiss()
@@ -178,13 +183,12 @@ class NotesFragment : Fragment() {
     fun onClearSelectedNotes(event: ClearNotesSelectedEvent) {
         noteAdapter.clearSelectedNotes()
         noteAdapter.setSelectedMode(false)
-        (activity as MainActivity).setTitleActionMode(noteAdapter.getSelectedNotesCount().toString())
         binding.addButton.visibility = View.VISIBLE
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onSelectedAllNotes(event: SelectedAllNotesEvent) {
-        if(noteAdapter.getSelectedNotesCount() < filterAndSortNotes(notes).size) {
+        if(noteAdapter.getSelectedNotes().size < noteAdapter.getNoteWithCategories().size) {
             noteAdapter.selectAllNotes()
         } else {
             noteAdapter.clearSelectedNotes()
@@ -194,13 +198,43 @@ class NotesFragment : Fragment() {
         (activity as MainActivity).setTitleActionMode(noteAdapter.getSelectedNotesCount().toString())
         binding.addButton.visibility = View.GONE
     }
+
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onSearchNoteEvent(event: SearchNoteEvent) {
+        Log.e(Constants.TAG, "onSearchNoteEvent: ", )
         val listSearch = filterAndSortNotes(notes).filter {
             it.note.title.lowercase().contains(event.query!!.lowercase(), true)
         }
         noteAdapter.submitList(listSearch)
     }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onColorizeEvent(event: ColorizeNoteEvent) {
+        val selectedNotes = noteAdapter.getSelectedNotes()
+        if(selectedNotes.isNotEmpty()) {
+            MaterialColorPickerDialog
+                .Builder(requireContext())
+                .setTitle("Select color")
+                .setColorShape(ColorShape.SQAURE)
+                .setColorSwatch(ColorSwatch._200)
+                .setColors(resources.getStringArray(R.array.themeColorHex))
+                .setColorListener { color, colorHex ->
+                    selectedNotes.forEach { note ->
+                        val noteUpdate = Note(
+                            noteId = note.noteId,
+                            title = note.title,
+                            content = note.content,
+                            color = colorHex,
+                            dateCreate = note.dateCreate,
+                        )
+                        notesViewModel.updateNote(noteUpdate)
+                    }
+                    (activity as MainActivity).finishActionMode()
+                }
+                .show()
+        }
+    }
+
 
     override fun onStart() {
         super.onStart()

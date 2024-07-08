@@ -84,13 +84,11 @@ class NoteAdapter(private val context: Context) :
         return when (PreferencesManager.getSortMode()) {
             SortNoteMode.CREATION_DATE_NEWEST.toString(),
             SortNoteMode.CREATION_DATE_OLDEST.toString() -> {
-                context.getString(R.string.created)
-                    .plus(DateTimeUtils.getFormattedDateTime(note.lastUpdate))
+                context.getString(R.string.created).plus(DateTimeUtils.getFormattedDateTime(note.dateCreate))
             }
 
             else -> {
-                context.getString(R.string.last_edit)
-                    .plus(DateTimeUtils.getFormattedDateTime(note.dateCreate))
+                context.getString(R.string.last_edit).plus(DateTimeUtils.getFormattedDateTime(note.lastUpdate))
             }
         }
     }
@@ -126,6 +124,10 @@ class NoteAdapter(private val context: Context) :
 
     fun getSelectedNotes(): List<Note> {
         return selectedNotes
+    }
+
+    fun getNoteWithCategories(): List<NoteWithCategories> {
+        return noteWithCategories
     }
 
     fun clearSelectedNotes() {

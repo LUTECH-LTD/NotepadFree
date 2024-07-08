@@ -3,6 +3,7 @@ package lutech.intern.noteapp.ui.main
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.RadioButton
@@ -16,12 +17,14 @@ import androidx.core.view.GravityCompat
 import androidx.fragment.app.Fragment
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.common.PreferencesManager
+import lutech.intern.noteapp.constant.Constants
 import lutech.intern.noteapp.constant.FragmentTag
 import lutech.intern.noteapp.constant.SortNoteMode
 import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.databinding.ActivityMainBinding
 import lutech.intern.noteapp.databinding.DialogSortOptionsBinding
 import lutech.intern.noteapp.event.ClearNotesSelectedEvent
+import lutech.intern.noteapp.event.ColorizeNoteEvent
 import lutech.intern.noteapp.event.DeleteNoteEvent
 import lutech.intern.noteapp.event.LoadNotesEvent
 import lutech.intern.noteapp.event.SearchNoteEvent
@@ -40,6 +43,7 @@ class MainActivity : AppCompatActivity() {
     private val mainViewModel: MainViewModel by viewModels()
     var navMenuItemIdSelected: Int? = null
     private var actionMode: ActionMode? = null
+    var currentSearchQuery: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -217,14 +221,15 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
+                currentSearchQuery = newText
                 EventBus.getDefault().post(SearchNoteEvent(newText))
                 return true
             }
         })
 
-
         searchItem?.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
             override fun onMenuItemActionExpand(item: MenuItem): Boolean {
+                binding.toolbar.menu.findItem(R.id.menu_search).isVisible = false
                 binding.toolbar.menu.findItem(R.id.menu_sort).isVisible = false
                 return true
             }
@@ -326,11 +331,15 @@ class MainActivity : AppCompatActivity() {
                 R.id.menu_focus_all -> {
                     EventBus.getDefault().post(SelectedAllNotesEvent())
                     return true
-
                 }
 
                 R.id.menu_delete -> {
                     EventBus.getDefault().post(DeleteNoteEvent())
+                    return true
+                }
+
+                R.id.menu_colorize -> {
+                    EventBus.getDefault().post(ColorizeNoteEvent())
                     return true
                 }
                 else -> return false
