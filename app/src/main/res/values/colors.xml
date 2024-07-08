@@ -10,4 +10,7 @@
     <color name="color_beige">#F9F8C0</color>
     <color name="color_beige_medium">#FFFFDD</color>
     <color name="color_blue">#0908AC</color>
+    <color name="color_menu_enabled">#80FFFFFF</color>
+    <color name="color_menu_enabled1">#80373737</color>
+
 </resources>

@@ -12,9 +12,65 @@
         app:showAsAction="ifRoom|collapseActionView" />
 
     <item
-        android:id="@+id/menu_more"
-        android:icon="@drawable/ic_more"
-        app:iconTint="@color/color_white"
-        android:title="@string/more"
+        android:id="@+id/menu_redo"
+        android:title="Redo"
+        app:showAsAction="ifRoom|collapseActionView"/>
+
+    <item
+        android:id="@+id/menu_undo_all"
+        android:title="Undo all"
+        app:showAsAction="ifRoom|collapseActionView"/>
+
+    <item
+        android:id="@+id/menu_share"
+        android:title="Share"
+        app:showAsAction="ifRoom|collapseActionView"/>
+
+    <item
+        android:id="@+id/menu_export"
+        android:title="Export text a file"
+        app:showAsAction="collapseActionView" />
+
+    <item
+        android:id="@+id/menu_delete"
+        android:title="Delete"
+        app:showAsAction="ifRoom|collapseActionView"/>
+
+    <item
+        android:id="@+id/menu_search"
+        android:icon="@drawable/ic_search"
+        android:title="Search"
+        app:actionViewClass="androidx.appcompat.widget.SearchView"
         app:showAsAction="ifRoom|collapseActionView" />
+
+    <item
+        android:id="@+id/menu_categorize"
+        android:title="Categorize"
+        app:showAsAction="ifRoom|collapseActionView"/>
+
+    <item
+        android:id="@+id/menu_colorize"
+        android:title="Colorize"
+        app:showAsAction="ifRoom|collapseActionView"/>
+
+    <item
+        android:id="@+id/menu_switch_mode"
+        android:title="Switch to read mode"
+        app:showAsAction="ifRoom|collapseActionView"/>
+
+    <item
+        android:id="@+id/menu_print"
+        android:title="Print"
+        app:showAsAction="ifRoom|collapseActionView"/>
+
+
+    <item
+        android:id="@+id/menu_show_formatting_bar"
+        android:title="Show formatting bar"
+        app:showAsAction="ifRoom|collapseActionView"/>
+
+    <item
+        android:id="@+id/menu_show_info"
+        android:title="Show info"
+        app:showAsAction="ifRoom|collapseActionView"/>
 </menu>
