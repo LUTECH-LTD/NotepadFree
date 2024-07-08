@@ -3,11 +3,9 @@ package lutech.intern.noteapp.ui.main
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.RadioButton
-import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -17,7 +15,6 @@ import androidx.core.view.GravityCompat
 import androidx.fragment.app.Fragment
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.common.PreferencesManager
-import lutech.intern.noteapp.constant.Constants
 import lutech.intern.noteapp.constant.FragmentTag
 import lutech.intern.noteapp.constant.SortNoteMode
 import lutech.intern.noteapp.data.entity.Category
@@ -107,7 +104,6 @@ class MainActivity : AppCompatActivity() {
                         FragmentTag.TAG_FRAGMENT_CATEGORIES.toString()
                     )
                     setToolbarTitle(getString(R.string.categories), null)
-                    EventBus.getDefault().post(LoadNotesEvent())
                     binding.toolbar.menu.clear()
                 }
 

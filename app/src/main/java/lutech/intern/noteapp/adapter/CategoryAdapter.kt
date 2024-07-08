@@ -1,23 +1,17 @@
 package lutech.intern.noteapp.adapter
 
 import android.annotation.SuppressLint
-import android.content.Context
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
-import lutech.intern.noteapp.constant.Constants
-import lutech.intern.noteapp.constant.MenuMode
 import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.databinding.ItemCategoryBinding
-import lutech.intern.noteapp.event.MenuModeEvent
-import lutech.intern.noteapp.ui.main.MainActivity
-import org.greenrobot.eventbus.EventBus
 
 class CategoryAdapter : RecyclerView.Adapter<CategoryAdapter.CategoryViewHolder>() {
     private val categories = mutableListOf<Category>()
     private var listener: OnItemClickListener? = null
+
     @SuppressLint("NotifyDataSetChanged")
     fun submitCategories(categories: List<Category>) {
         this.categories.clear()
@@ -43,13 +37,13 @@ class CategoryAdapter : RecyclerView.Adapter<CategoryAdapter.CategoryViewHolder>
     inner class CategoryViewHolder(private val binding: ItemCategoryBinding) : ViewHolder(binding.root) {
         fun onBind(category: Category) {
             binding.nameCategoryTextView.text = category.name
-            binding.editButton.setOnClickListener { listener?.onEditButtonListener(category) }
-            binding.deleteButton.setOnClickListener { listener?.onDeleteButtonListener(category) }
+            binding.editButton.setOnClickListener { listener?.onEditButtonClickListener(category) }
+            binding.deleteButton.setOnClickListener { listener?.onDeleteButtonClickListener(category) }
         }
     }
 
     interface OnItemClickListener {
-        fun onEditButtonListener(category: Category)
-        fun onDeleteButtonListener(category: Category)
+        fun onEditButtonClickListener(category: Category)
+        fun onDeleteButtonClickListener(category: Category)
     }
 }

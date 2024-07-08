@@ -14,5 +14,5 @@ class MainViewModel : ViewModel() {
         )
     }
 
-    val categories: LiveData<List<Category>> = categoryRepository.fetchAllCategories()
+    val categories: LiveData<List<Category>> = categoryRepository.getAllCategories()
 }

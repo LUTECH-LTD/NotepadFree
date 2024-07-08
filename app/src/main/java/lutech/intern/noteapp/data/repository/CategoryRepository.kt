@@ -5,8 +5,8 @@ import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.database.dao.CategoryDao
 
 class CategoryRepository(private val categoryDao: CategoryDao) {
-    fun fetchAllCategories(): LiveData<List<Category>> {
-        return categoryDao.fetchAllCategories()
+    fun getAllCategories(): LiveData<List<Category>> {
+        return categoryDao.getAllCategories()
     }
 
     suspend fun insert(category: Category): Boolean {

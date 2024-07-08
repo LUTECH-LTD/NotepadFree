@@ -20,10 +20,10 @@ interface CategoryDao {
     suspend fun update(category: Category) : Int
 
     @Delete
-    suspend fun delete(category: Category)
+    suspend fun delete(category: Category) : Int
 
     @Query("SELECT * FROM category ORDER BY categoryId ASC")
-    fun fetchAllCategories(): LiveData<List<Category>>
+    fun getAllCategories(): LiveData<List<Category>>
 
     @Query("SELECT * FROM Category WHERE name =:name")
     fun getCategoryByName(name: String): Category?

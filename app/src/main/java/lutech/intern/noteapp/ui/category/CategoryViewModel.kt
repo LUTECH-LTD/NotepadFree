@@ -10,22 +10,24 @@ import lutech.intern.noteapp.data.repository.CategoryRepository
 import lutech.intern.noteapp.database.NoteDatabase
 
 class CategoryViewModel : ViewModel() {
-    private val categoryRepository by lazy {
-        CategoryRepository(
-            NoteDatabase.getDatabase(NoteApplication.context).categoryDao()
-        )
-    }
-    val categories: LiveData<List<Category>> = categoryRepository.fetchAllCategories()
+    private var categoryRepository: CategoryRepository
 
-    fun insert(category: Category, callback: (Boolean) -> Unit) = viewModelScope.launch {
+    init {
+        val categoryDao = NoteDatabase.getDatabase(NoteApplication.context).categoryDao()
+        categoryRepository = CategoryRepository(categoryDao)
+    }
+
+    val categories: LiveData<List<Category>> = categoryRepository.getAllCategories()
+
+    fun insertCategory(category: Category, callback: (Boolean) -> Unit) = viewModelScope.launch {
         callback(categoryRepository.insert(category))
     }
 
-    fun update(category: Category, callback: (Boolean) -> Unit) = viewModelScope.launch {
+    fun updateCategory(category: Category, callback: (Boolean) -> Unit) = viewModelScope.launch {
         callback(categoryRepository.update(category))
     }
 
-    fun delete(category: Category) = viewModelScope.launch {
+    fun deleteCategory(category: Category) = viewModelScope.launch {
         categoryRepository.delete(category)
     }
 }

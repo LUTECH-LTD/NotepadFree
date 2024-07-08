@@ -1,7 +1,6 @@
 package lutech.intern.noteapp.ui.note
 
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
@@ -35,7 +34,7 @@ class NotesViewModel : ViewModel() {
     }
 
     val noteWithCategories: LiveData<List<NoteWithCategories>> = noteRepository.fetchNoteWithCategories()
-    val categories: LiveData<List<Category>> = categoryRepository.fetchAllCategories()
+    val categories: LiveData<List<Category>> = categoryRepository.getAllCategories()
 
     fun insert(note: Note, callback: (Note) -> Unit) = viewModelScope.launch {
         val noteId = noteRepository.insert(note)
