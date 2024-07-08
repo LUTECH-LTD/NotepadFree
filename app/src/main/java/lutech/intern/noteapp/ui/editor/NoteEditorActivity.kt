@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModel
 import com.github.dhaval2404.colorpicker.MaterialColorPickerDialog
 import com.github.dhaval2404.colorpicker.model.ColorShape
 import com.github.dhaval2404.colorpicker.model.ColorSwatch
@@ -52,14 +53,12 @@ class NoteEditorActivity : AppCompatActivity() {
             this.categories = categories
             noteEditorViewModel.noteWithCategories.observe(this) { noteWithCategories ->
                 val currentId = getNoteFormIntent()?.noteId
-                val noteWithCategoriesFilter: List<NoteWithCategories> =
-                    noteWithCategories.filter { it.note.noteId == currentId }
+                val noteWithCategoriesFilter: List<NoteWithCategories> = noteWithCategories.filter { it.note.noteId == currentId }
                 this.noteCategories = noteWithCategoriesFilter[0].categories
 
                 categorySelectedAdapter.submitList(categories, noteCategories)
             }
         }
-
     }
 
     private fun initViews() {
@@ -252,8 +251,7 @@ class NoteEditorActivity : AppCompatActivity() {
                                             0.5f
                                         )
                                     )
-                                    binding.layoutEdit.background =
-                                        DrawableUtils.createSolidDrawable(this, colorHex)
+                                    binding.layoutEdit.background = DrawableUtils.createSolidDrawable(this, colorHex)
                                 }
 
                             }
@@ -263,6 +261,25 @@ class NoteEditorActivity : AppCompatActivity() {
                 }
 
                 R.id.menu_delete -> {
+                    val currentNote = getNoteFormIntent()
+                    currentNote?.let {
+                        val builder = AlertDialog.Builder(this)
+                        builder.apply {
+                            setMessage("The '${it.title}' note will be deleted\nAre you sure")
+                            setPositiveButton(R.string.ok) { _, _ ->
+                                noteEditorViewModel.deleteNote(it)
+                                noteEditorViewModel.categories.removeObservers(this@NoteEditorActivity)
+                                noteEditorViewModel.noteWithCategories.removeObservers(this@NoteEditorActivity)
+                                finish()
+                            }
+                            setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
+                                dialog.dismiss()
+                            }
+                        }
+
+                        val dialog = builder.create()
+                        dialog.show()
+                    }
                     true
                 }
 
