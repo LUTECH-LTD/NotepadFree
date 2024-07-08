@@ -44,7 +44,7 @@ class CategoriesFragment : Fragment() {
     }
 
     private fun initEvents() {
-        binding.btnAdd.setOnClickListener { insertCategory() }
+        binding.btnAdd.setOnClickListener { handleInsertCategory() }
 
         categoryAdapter.setOnItemClickListener(object : CategoryAdapter.OnItemClickListener {
             override fun onEditButtonClickListener(category: Category) {
@@ -58,13 +58,17 @@ class CategoriesFragment : Fragment() {
 
     }
 
-    private fun insertCategory() {
+    private fun handleInsertCategory() {
         val name = binding.edtName.text.toString().trim()
         if (name.isEmpty()) {
             return
         }
 
         val category = Category(name = name)
+        insertCategory(category)
+    }
+
+    private fun insertCategory(category: Category) {
         categoryViewModel.insertCategory(category) { isSuccess ->
             if (isSuccess) {
                 binding.edtName.text?.clear()
@@ -89,11 +93,11 @@ class CategoriesFragment : Fragment() {
 
         dialogBinding.nameEditText.setText(category.name)
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            updateCategory(dialogBinding, category, dialog)
+            handleUpdateCategory(dialogBinding, category, dialog)
         }
     }
 
-    private fun updateCategory(
+    private fun handleUpdateCategory(
         dialogBinding: DialogEditCategoryBinding,
         category: Category,
         dialog: Dialog,
@@ -105,7 +109,15 @@ class CategoriesFragment : Fragment() {
         }
 
         val categoryToUpdate = Category(category.categoryId, name)
-        categoryViewModel.updateCategory(categoryToUpdate) { isSuccess ->
+        updateCategory(categoryToUpdate, dialog, dialogBinding)
+    }
+
+    private fun updateCategory(
+        category: Category,
+        dialog: Dialog,
+        dialogBinding: DialogEditCategoryBinding
+    ) {
+        categoryViewModel.updateCategory(category) { isSuccess ->
             if (isSuccess) {
                 dialog.dismiss()
                 dialogBinding.messageError.visibility = View.GONE

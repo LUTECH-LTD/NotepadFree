@@ -3,7 +3,6 @@ package lutech.intern.noteapp.ui.note
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,27 +20,19 @@ import lutech.intern.noteapp.adapter.NoteAdapter
 import lutech.intern.noteapp.common.PreferencesManager
 import lutech.intern.noteapp.constant.Constants
 import lutech.intern.noteapp.constant.SortNoteMode
+import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.data.entity.NoteWithCategories
 import lutech.intern.noteapp.data.entity.relations.NoteCategoryCrossRef
 import lutech.intern.noteapp.databinding.DialogSelectCategoryBinding
 import lutech.intern.noteapp.databinding.FragmentNotesBinding
-import lutech.intern.noteapp.event.CategorizeNoteChangeEvent
-import lutech.intern.noteapp.event.ClearNotesSelectedEvent
-import lutech.intern.noteapp.event.ColorizeNoteEvent
-import lutech.intern.noteapp.event.DeleteNoteEvent
-import lutech.intern.noteapp.event.ExportFileEvent
-import lutech.intern.noteapp.event.ImportFileEvent
-import lutech.intern.noteapp.event.LoadNotesEvent
-import lutech.intern.noteapp.event.SearchNoteEvent
-import lutech.intern.noteapp.event.SelectedAllNotesEvent
+import lutech.intern.noteapp.event.Event
 import lutech.intern.noteapp.ui.editor.NoteEditorActivity
 import lutech.intern.noteapp.ui.main.MainActivity
 import lutech.intern.noteapp.utils.FileManager
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
-import java.util.Collections
 
 class NotesFragment : Fragment() {
     private val binding by lazy { FragmentNotesBinding.inflate(layoutInflater) }
@@ -51,31 +42,37 @@ class NotesFragment : Fragment() {
     private val categorySelectionAdapter by lazy { CategorySelectionAdapter() }
 
     private val openDocumentTreeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == AppCompatActivity.RESULT_OK) {
-            result.data?.data?.let { uri ->
-                // Export file vào máy
-                if(!noteAdapter.isSelectedMode()) {
-                    noteAdapter.getNoteWithCategories().forEach {
-                        FileManager(requireContext()).exportFileToFolder(uri, it.note.title, it.note.content)
-                    }
-                } else {
-                    if(noteAdapter.getSelectedNotes().isNotEmpty()) {
-                        noteAdapter.getSelectedNotes().forEach {
-                            FileManager(requireContext()).exportFileToFolder(uri, it.title, it.content)
+            if (result.resultCode == AppCompatActivity.RESULT_OK) {
+                result.data?.data?.let { uri ->
+                    // Export file vào máy
+                    if (!noteAdapter.isSelectedMode()) {
+                        noteAdapter.getNoteWithCategories().forEach {
+                            FileManager(requireContext()).exportFileToFolder(
+                                uri,
+                                it.note.title,
+                                it.note.content
+                            )
+                        }
+                    } else {
+                        if (noteAdapter.getSelectedNotes().isNotEmpty()) {
+                            noteAdapter.getSelectedNotes().forEach {
+                                FileManager(requireContext()).exportFileToFolder(
+                                    uri,
+                                    it.title,
+                                    it.content
+                                )
+                            }
                         }
                     }
+                    (activity as MainActivity).finishActionMode()
                 }
-                (activity as MainActivity).finishActionMode()
             }
         }
-    }
 
-    private val openDocumentLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
+    private val openDocumentLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == AppCompatActivity.RESULT_OK) {
             result.data?.data?.let { uri ->
-                val note =  FileManager(requireContext()).importFileFromFolder(uri)
+                val note = FileManager(requireContext()).importFileFromFolder(uri)
                 note?.let {
                     notesViewModel.insert(note) {}
                 }
@@ -117,7 +114,8 @@ class NotesFragment : Fragment() {
     }
 
     private fun filterAndSortNotes(noteWithCategories: List<NoteWithCategories>): List<NoteWithCategories> {
-        val menuItemId = (activity as MainActivity).navMenuItemIdSelected ?: return noteWithCategories
+        val menuItemId =
+            (activity as MainActivity).navMenuItemIdSelected ?: return noteWithCategories
 
         // Filter list by category
         val filteredList = when (menuItemId) {
@@ -146,7 +144,7 @@ class NotesFragment : Fragment() {
     private fun reloadData() {
         noteAdapter.submitList(filterAndSortNotes(notes))
         (activity as MainActivity).currentSearchQuery?.let {
-            EventBus.getDefault().post(SearchNoteEvent(it))
+            EventBus.getDefault().post(Event.SearchNotesEvent(it))
         }
     }
 
@@ -170,22 +168,26 @@ class NotesFragment : Fragment() {
 
         noteAdapter.setOnItemClickListener(object : NoteAdapter.OnItemClickListener {
             override fun onItemClickListener(note: Note) {
-                if(noteAdapter.isSelectedMode()) {
+                if (noteAdapter.isSelectedMode()) {
                     noteAdapter.toggleSelection(note)
                     (activity as MainActivity).openActionMode()
-                    (activity as MainActivity).setTitleActionMode(noteAdapter.getSelectedNotesCount().toString())
+                    (activity as MainActivity).setTitleActionMode(
+                        noteAdapter.getSelectedNotesCount().toString()
+                    )
                 } else {
                     launcherNoteEditorActivity(note)
                 }
             }
 
             override fun onItemLongClickListener(note: Note) {
-                if(!noteAdapter.isSelectedMode()) {
+                if (!noteAdapter.isSelectedMode()) {
                     binding.addButton.visibility = View.GONE
                     noteAdapter.toggleSelection(note)
                     noteAdapter.setSelectedMode(true)
                     (activity as MainActivity).openActionMode()
-                    (activity as MainActivity).setTitleActionMode(noteAdapter.getSelectedNotesCount().toString())
+                    (activity as MainActivity).setTitleActionMode(
+                        noteAdapter.getSelectedNotesCount().toString()
+                    )
                 }
             }
         })
@@ -198,23 +200,82 @@ class NotesFragment : Fragment() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onLoadNotesEvent(event: LoadNotesEvent) {
-        reloadData()
+    fun onEvent(event: Event) {
+        when (event) {
+            is Event.LoadNotesEvent -> {
+                reloadData()
+            }
+
+            is Event.SearchNotesEvent -> {
+                searchNotes(notes, event.query ?: "")
+            }
+
+            is Event.SelectAllNotesEvent -> {
+                selectAllNotes()
+            }
+
+            is Event.DeleteNotesEvent -> {
+                showDeleteNotesDialog()
+            }
+
+            is Event.ClearSelectedNotesEvent -> {
+                clearSelectedNotes()
+            }
+
+            is Event.ChangeCategoryNotesEvent -> {
+                showPickerCategoryDialog()
+            }
+
+            is Event.ChangeColorNotesEvent -> {
+                showColorPickerDialog()
+            }
+
+            is Event.ExportNotesEvent -> {
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+                openDocumentTreeLauncher.launch(intent)
+            }
+
+            is Event.ImportNotesEvent -> {
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "text/plain"
+                }
+                openDocumentLauncher.launch(intent)
+            }
+
+            else -> Unit
+        }
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onDeleteNoteEvent(event: DeleteNoteEvent) {
+    private fun searchNotes(notes: List<NoteWithCategories>, query: String) {
+        val searchNotes = filterAndSortNotes(notes).filter {
+            it.note.title.lowercase().contains(query.lowercase())
+        }
+        noteAdapter.submitList(searchNotes)
+    }
+
+    private fun selectAllNotes() {
+        if (noteAdapter.getSelectedNotes().size < noteAdapter.getNoteWithCategories().size) {
+            noteAdapter.selectAllNotes()
+        } else {
+            noteAdapter.clearSelectedNotes()
+        }
+        noteAdapter.setSelectedMode(true)
+        (activity as MainActivity).openActionMode()
+        (activity as MainActivity).setTitleActionMode(
+            noteAdapter.getSelectedNotesCount().toString()
+        )
+        binding.addButton.visibility = View.GONE
+    }
+
+    private fun showDeleteNotesDialog() {
         val list = noteAdapter.getSelectedNotes()
-        if(list.isNotEmpty()) {
-            val builder = android.app.AlertDialog.Builder(requireContext())
+        if (list.isNotEmpty()) {
+            val builder = AlertDialog.Builder(requireContext())
             builder.apply {
                 setMessage("Delete the selected notes?")
                 setPositiveButton(R.string.ok) { _, _ ->
-                    list.forEach {
-                        notesViewModel.deleteNote(it)
-                    }
-                    Toast.makeText(requireContext(), "Delete notes (${list.size})", Toast.LENGTH_SHORT).show()
-                    (activity as MainActivity).finishActionMode()
+                    deleteNotes(list)
                 }
                 setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
                     dialog.dismiss()
@@ -226,39 +287,21 @@ class NotesFragment : Fragment() {
         }
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onClearSelectedNotes(event: ClearNotesSelectedEvent) {
+    private fun deleteNotes(list: List<Note>) {
+        list.forEach { notesViewModel.deleteNote(it) }
+        Toast.makeText(requireContext(), "Delete notes (${list.size})", Toast.LENGTH_SHORT).show()
+        (activity as MainActivity).finishActionMode()
+    }
+
+    private fun clearSelectedNotes() {
         noteAdapter.clearSelectedNotes()
         noteAdapter.setSelectedMode(false)
         binding.addButton.visibility = View.VISIBLE
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onSelectedAllNotes(event: SelectedAllNotesEvent) {
-        if(noteAdapter.getSelectedNotes().size < noteAdapter.getNoteWithCategories().size) {
-            noteAdapter.selectAllNotes()
-        } else {
-            noteAdapter.clearSelectedNotes()
-        }
-        noteAdapter.setSelectedMode(true)
-        (activity as MainActivity).openActionMode()
-        (activity as MainActivity).setTitleActionMode(noteAdapter.getSelectedNotesCount().toString())
-        binding.addButton.visibility = View.GONE
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onSearchNoteEvent(event: SearchNoteEvent) {
-        Log.e(Constants.TAG, "onSearchNoteEvent: ", )
-        val listSearch = filterAndSortNotes(notes).filter {
-            it.note.title.lowercase().contains(event.query!!.lowercase(), true)
-        }
-        noteAdapter.submitList(listSearch)
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onColorizeEvent(event: ColorizeNoteEvent) {
+    private fun showColorPickerDialog() {
         val selectedNotes = noteAdapter.getSelectedNotes()
-        if(selectedNotes.isNotEmpty()) {
+        if (selectedNotes.isNotEmpty()) {
             MaterialColorPickerDialog
                 .Builder(requireContext())
                 .setTitle("Select color")
@@ -266,29 +309,34 @@ class NotesFragment : Fragment() {
                 .setColorSwatch(ColorSwatch._200)
                 .setColors(resources.getStringArray(R.array.themeColorHex))
                 .setColorListener { color, colorHex ->
-                    selectedNotes.forEach { note ->
-                        val noteUpdate = Note(
-                            noteId = note.noteId,
-                            title = note.title,
-                            content = note.content,
-                            color = colorHex,
-                            dateCreate = note.dateCreate,
-                        )
-                        notesViewModel.updateNote(noteUpdate)
-                    }
-                    (activity as MainActivity).finishActionMode()
+                    updateColorNotes(selectedNotes, colorHex)
                 }
                 .show()
         }
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onCategorizeNoteChangeEvent(event: CategorizeNoteChangeEvent) {
+    private fun updateColorNotes(
+        selectedNotes: List<Note>,
+        colorHex: String
+    ) {
+        selectedNotes.forEach { note ->
+            val noteUpdate = Note(
+                noteId = note.noteId,
+                title = note.title,
+                content = note.content,
+                color = colorHex,
+                dateCreate = note.dateCreate,
+            )
+            notesViewModel.updateNote(noteUpdate)
+        }
+        (activity as MainActivity).finishActionMode()
+    }
+
+    private fun showPickerCategoryDialog() {
         val selectedCategories = categorySelectionAdapter.getSelectedCategories()
         val selectedNotes = noteAdapter.getSelectedNotes()
-        if(selectedNotes.isNotEmpty()){
-
-            if(categorySelectionAdapter.getCategories().isEmpty()) {
+        if (selectedNotes.isNotEmpty()) {
+            if (categorySelectionAdapter.getCategories().isEmpty()) {
                 val builder = AlertDialog.Builder(requireContext())
                 builder.apply {
                     setMessage("Categories can be added in the app's menu. To open the menu use menu in the top left corner off the note list screen.")
@@ -308,16 +356,7 @@ class NotesFragment : Fragment() {
             builder.apply {
                 setView(dialogBinding.root)
                 setPositiveButton(R.string.ok) { _, _ ->
-                    if(selectedCategories.isNotEmpty()) {
-                        selectedNotes.forEach { note ->
-                            selectedCategories.forEach { category ->
-                                notesViewModel.insertNoteCategoryCrossRef(
-                                    NoteCategoryCrossRef(noteId = note.noteId, categoryId = category.categoryId)
-                                )
-                            }
-                        }
-                    }
-                    (activity as MainActivity).finishActionMode()
+                    updateCategoryNotes(selectedCategories, selectedNotes)
                 }
             }
 
@@ -330,19 +369,23 @@ class NotesFragment : Fragment() {
         }
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onExportFileEvent(event: ExportFileEvent) {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-        openDocumentTreeLauncher.launch(intent)
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onImportFileEvent(event: ImportFileEvent) {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "text/plain"
+    private fun updateCategoryNotes(
+        selectedCategories: List<Category>,
+        selectedNotes: List<Note>
+    ) {
+        if (selectedCategories.isNotEmpty()) {
+            selectedNotes.forEach { note ->
+                selectedCategories.forEach { category ->
+                    notesViewModel.insertNoteCategoryCrossRef(
+                        NoteCategoryCrossRef(
+                            noteId = note.noteId,
+                            categoryId = category.categoryId
+                        )
+                    )
+                }
+            }
         }
-        openDocumentLauncher.launch(intent)
+        (activity as MainActivity).finishActionMode()
     }
 
 

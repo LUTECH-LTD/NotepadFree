@@ -20,15 +20,7 @@ import lutech.intern.noteapp.constant.SortNoteMode
 import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.databinding.ActivityMainBinding
 import lutech.intern.noteapp.databinding.DialogSortOptionsBinding
-import lutech.intern.noteapp.event.CategorizeNoteChangeEvent
-import lutech.intern.noteapp.event.ClearNotesSelectedEvent
-import lutech.intern.noteapp.event.ColorizeNoteEvent
-import lutech.intern.noteapp.event.DeleteNoteEvent
-import lutech.intern.noteapp.event.ExportFileEvent
-import lutech.intern.noteapp.event.ImportFileEvent
-import lutech.intern.noteapp.event.LoadNotesEvent
-import lutech.intern.noteapp.event.SearchNoteEvent
-import lutech.intern.noteapp.event.SelectedAllNotesEvent
+import lutech.intern.noteapp.event.Event
 import lutech.intern.noteapp.ui.BackupActivity
 import lutech.intern.noteapp.ui.HelpActivity
 import lutech.intern.noteapp.ui.note.NotesFragment
@@ -83,7 +75,7 @@ class MainActivity : AppCompatActivity() {
                     )
                     setToolbarTitle(getString(R.string.app_name), null)
                     navMenuItemIdSelected = R.id.menu_notes
-                    EventBus.getDefault().post(LoadNotesEvent())
+                    EventBus.getDefault().post(Event.LoadNotesEvent)
                     invalidateOptionsMenu()
                 }
 
@@ -94,7 +86,7 @@ class MainActivity : AppCompatActivity() {
                     )
                     setToolbarTitle(getString(R.string.app_name), item.title)
                     navMenuItemIdSelected = R.id.menu_uncategorized
-                    EventBus.getDefault().post(LoadNotesEvent())
+                    EventBus.getDefault().post(Event.LoadNotesEvent)
                     invalidateOptionsMenu()
                 }
 
@@ -148,7 +140,7 @@ class MainActivity : AppCompatActivity() {
                         )
                         setToolbarTitle(getString(R.string.app_name), item.title)
                         navMenuItemIdSelected = item.itemId
-                        EventBus.getDefault().post(LoadNotesEvent())
+                        EventBus.getDefault().post(Event.LoadNotesEvent)
                         invalidateOptionsMenu()
                     }
                 }
@@ -221,7 +213,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun onQueryTextChange(newText: String?): Boolean {
                 currentSearchQuery = newText
-                EventBus.getDefault().post(SearchNoteEvent(newText))
+                EventBus.getDefault().post(Event.SearchNotesEvent(newText))
                 return true
             }
         })
@@ -249,16 +241,16 @@ class MainActivity : AppCompatActivity() {
             }
 
             R.id.menu_select_all -> {
-                EventBus.getDefault().post(SelectedAllNotesEvent())
+                EventBus.getDefault().post(Event.SelectAllNotesEvent)
             }
 
             R.id.menu_import -> {
-                EventBus.getDefault().post(ImportFileEvent())
+                EventBus.getDefault().post(Event.ImportNotesEvent)
                 return true
             }
 
             R.id.menu_export -> {
-                EventBus.getDefault().post(ExportFileEvent())
+                EventBus.getDefault().post(Event.ExportNotesEvent)
                 return true
             }
         }
@@ -277,7 +269,7 @@ class MainActivity : AppCompatActivity() {
             setPositiveButton(R.string.ok) { _, _ ->
                 selectedSortNoteMode?.let {
                     PreferencesManager.setSortMode(it)
-                    EventBus.getDefault().post(LoadNotesEvent())
+                    EventBus.getDefault().post(Event.LoadNotesEvent)
                 }
             }
             setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
@@ -330,27 +322,27 @@ class MainActivity : AppCompatActivity() {
         override fun onActionItemClicked(mode: ActionMode?, item: MenuItem): Boolean {
             when (item.itemId) {
                 R.id.menu_focus_all -> {
-                    EventBus.getDefault().post(SelectedAllNotesEvent())
+                    EventBus.getDefault().post(Event.SelectAllNotesEvent)
                     return true
                 }
 
                 R.id.menu_delete -> {
-                    EventBus.getDefault().post(DeleteNoteEvent())
+                    EventBus.getDefault().post(Event.DeleteNotesEvent)
                     return true
                 }
 
                 R.id.menu_categorize -> {
-                    EventBus.getDefault().post(CategorizeNoteChangeEvent())
+                    EventBus.getDefault().post(Event.ChangeCategoryNotesEvent)
                     return true
                 }
 
                 R.id.menu_colorize -> {
-                    EventBus.getDefault().post(ColorizeNoteEvent())
+                    EventBus.getDefault().post(Event.ChangeColorNotesEvent)
                     return true
                 }
 
                 R.id.menu_export -> {
-                    EventBus.getDefault().post(ExportFileEvent())
+                    EventBus.getDefault().post(Event.ExportNotesEvent)
                     return true
                 }
 
@@ -360,7 +352,7 @@ class MainActivity : AppCompatActivity() {
 
         override fun onDestroyActionMode(mode: ActionMode?) {
             actionMode = null
-            EventBus.getDefault().post(ClearNotesSelectedEvent())
+            EventBus.getDefault().post(Event.ClearSelectedNotesEvent)
         }
     }
 
