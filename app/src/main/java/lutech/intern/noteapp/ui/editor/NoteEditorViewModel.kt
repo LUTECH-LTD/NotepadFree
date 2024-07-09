@@ -16,30 +16,27 @@ import lutech.intern.noteapp.data.repository.NoteRepository
 import lutech.intern.noteapp.database.NoteDatabase
 
 class NoteEditorViewModel : ViewModel() {
-    private val noteRepository by lazy {
-        NoteRepository(
-            NoteDatabase.getDatabase(NoteApplication.context).noteDao()
-        )
-    }
-    private val categoryRepository by lazy {
-        CategoryRepository(
-            NoteDatabase.getDatabase(NoteApplication.context).categoryDao()
-        )
-    }
-    private val noteCategoryCrossRepository by lazy {
-        NoteCategoryCrossRefRepository(
-            NoteDatabase.getDatabase(NoteApplication.context).noteCategoryCrossRefDao()
-        )
+    private var noteRepository: NoteRepository
+    private var categoryRepository: CategoryRepository
+    private var noteCategoryCrossRepository: NoteCategoryCrossRefRepository
+
+    init {
+        val noteDatabase = NoteDatabase.getDatabase(NoteApplication.context)
+        val noteDao = noteDatabase.noteDao()
+        val categoryDao = noteDatabase.categoryDao()
+        val noteCategoryCrossRefDao = noteDatabase.noteCategoryCrossRefDao()
+
+        noteRepository = NoteRepository(noteDao)
+        categoryRepository = CategoryRepository(categoryDao)
+        noteCategoryCrossRepository = NoteCategoryCrossRefRepository(noteCategoryCrossRefDao)
     }
 
+    val categoryWithNotes: LiveData<List<CategoryWithNotes>> = categoryRepository.getCategoryWithNotes()
+    val categories: LiveData<List<Category>> = categoryRepository.getCategories()
     private val _note = MutableLiveData<Note>()
     val note : LiveData<Note> = _note
 
-    val categoryWithNotes: LiveData<List<CategoryWithNotes>> = categoryRepository.getCategoryWithNotes()
-
-    val categories: LiveData<List<Category>> = categoryRepository.getCategories()
-
-    fun update(note: Note) = viewModelScope.launch {
+    fun updateNote(note: Note) = viewModelScope.launch {
         noteRepository.update(note)
         getNoteById(note.noteId)
     }

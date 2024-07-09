@@ -212,7 +212,7 @@ class NoteEditorActivity : AppCompatActivity() {
             }
 
             R.id.menu_print -> {
-                printDocument("PhuHM")
+                printDocument("")
                 return true
             }
 
@@ -235,7 +235,7 @@ class NoteEditorActivity : AppCompatActivity() {
         val content = binding.textEditText.text.toString().trim()
         currentNote?.let {
             val note = Note(noteId = it.noteId, title = title, content = content, color = it.color, dateCreate = it.dateCreate)
-            noteEditorViewModel.update(note)
+            noteEditorViewModel.updateNote(note)
         }
     }
 
@@ -375,7 +375,7 @@ class NoteEditorActivity : AppCompatActivity() {
                         color = colorHex,
                         dateCreate = it.dateCreate
                     )
-                    noteEditorViewModel.update(note)
+                    noteEditorViewModel.updateNote(note)
                 }
                 .show()
         }

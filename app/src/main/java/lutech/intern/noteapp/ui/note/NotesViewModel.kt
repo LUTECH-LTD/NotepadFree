@@ -15,28 +15,25 @@ import lutech.intern.noteapp.data.repository.NoteRepository
 import lutech.intern.noteapp.database.NoteDatabase
 
 class NotesViewModel : ViewModel() {
-    private val noteRepository by lazy {
-        NoteRepository(
-            NoteDatabase.getDatabase(NoteApplication.context).noteDao()
-        )
+    private var noteRepository: NoteRepository
+    private var categoryRepository: CategoryRepository
+    private var noteCategoryCrossRepository: NoteCategoryCrossRefRepository
+
+    init {
+        val noteDatabase = NoteDatabase.getDatabase(NoteApplication.context)
+        val noteDao = noteDatabase.noteDao()
+        val categoryDao = noteDatabase.categoryDao()
+        val noteCategoryCrossRefDao = noteDatabase.noteCategoryCrossRefDao()
+
+        noteRepository = NoteRepository(noteDao)
+        categoryRepository = CategoryRepository(categoryDao)
+        noteCategoryCrossRepository = NoteCategoryCrossRefRepository(noteCategoryCrossRefDao)
     }
 
-    private val categoryRepository by lazy {
-        CategoryRepository(
-            NoteDatabase.getDatabase(NoteApplication.context).categoryDao()
-        )
-    }
-
-    private val noteCategoryCrossRepository by lazy {
-        NoteCategoryCrossRefRepository(
-            NoteDatabase.getDatabase(NoteApplication.context).noteCategoryCrossRefDao()
-        )
-    }
-
-    val noteWithCategories: LiveData<List<NoteWithCategories>> = noteRepository.fetchNoteWithCategories()
+    val noteWithCategories: LiveData<List<NoteWithCategories>> =  noteRepository.getNoteWithCategories()
     val categories: LiveData<List<Category>> = categoryRepository.getCategories()
 
-    fun insert(note: Note, callback: (Note) -> Unit) = viewModelScope.launch {
+    fun insertNote(note: Note, callback: (Note) -> Unit) = viewModelScope.launch {
         val noteId = noteRepository.insert(note)
         val noteWithNoteId = noteRepository.getNoteById(noteId)
         noteWithNoteId?.let {

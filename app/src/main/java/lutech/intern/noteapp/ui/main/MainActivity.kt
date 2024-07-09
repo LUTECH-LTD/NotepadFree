@@ -32,9 +32,9 @@ import org.greenrobot.eventbus.EventBus
 
 class MainActivity : AppCompatActivity() {
     private val binding by lazy { ActivityMainBinding.inflate(layoutInflater) }
-    private val mainViewModel: MainViewModel by viewModels()
-    var navMenuItemIdSelected: Int? = null
+    private val viewModel: MainViewModel by viewModels()
     private var actionMode: ActionMode? = null
+    var navMenuItemIdSelected: Int? = null
     var currentSearchQuery: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,12 +42,10 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         initToolbar()
         handleEvent()
-        observeCategoriesUpdate()
+        observeCategories()
 
         if (savedInstanceState == null) {
-            loadFragment(NotesFragment.newInstance(), FragmentTag.TAG_FRAGMENT_NOTES.toString())
-            setToolbarTitle(getString(R.string.app_name), null)
-            navMenuItemIdSelected = R.id.menu_notes
+            loadNotesFragment(null, R.id.menu_notes)
         }
     }
 
@@ -66,28 +64,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleEvent() {
-        binding.navigationView.setNavigationItemSelectedListener { item ->
+        binding.navMenu.setNavigationItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.menu_notes -> {
-                    loadFragment(
-                        NotesFragment.newInstance(),
-                        FragmentTag.TAG_FRAGMENT_NOTES.toString()
-                    )
-                    setToolbarTitle(getString(R.string.app_name), null)
-                    navMenuItemIdSelected = R.id.menu_notes
-                    EventBus.getDefault().post(Event.LoadNotesEvent)
-                    invalidateOptionsMenu()
+                    loadNotesFragment(null, R.id.menu_notes)
                 }
 
                 R.id.menu_uncategorized -> {
-                    loadFragment(
-                        NotesFragment.newInstance(),
-                        FragmentTag.TAG_FRAGMENT_NOTES.toString()
-                    )
-                    setToolbarTitle(getString(R.string.app_name), item.title)
-                    navMenuItemIdSelected = R.id.menu_uncategorized
-                    EventBus.getDefault().post(Event.LoadNotesEvent)
-                    invalidateOptionsMenu()
+                    loadNotesFragment(null, R.id.menu_uncategorized)
                 }
 
                 R.id.menu_edit_categories -> {
@@ -134,20 +118,23 @@ class MainActivity : AppCompatActivity() {
 
                 else -> {
                     if (item.groupId == R.id.group_categories) {
-                        loadFragment(
-                            NotesFragment.newInstance(),
-                            FragmentTag.TAG_FRAGMENT_NOTES.toString()
-                        )
-                        setToolbarTitle(getString(R.string.app_name), item.title)
-                        navMenuItemIdSelected = item.itemId
-                        EventBus.getDefault().post(Event.LoadNotesEvent)
-                        invalidateOptionsMenu()
+                        loadNotesFragment(item.title, item.itemId)
                     }
                 }
             }
             binding.drawerLayout.closeDrawers()
             true
         }
+    }
+
+    private fun loadNotesFragment(
+        subTitle: CharSequence?,
+        navMenuId: Int,
+    ) {
+        loadFragment(NotesFragment.newInstance(), FragmentTag.TAG_FRAGMENT_NOTES.toString())
+        setToolbarTitle(getString(R.string.app_name), subTitle)
+        navMenuItemIdSelected = navMenuId
+        EventBus.getDefault().post(Event.LoadNotesEvent)
     }
 
     private fun loadFragment(fragment: Fragment, tag: String) {
@@ -170,14 +157,14 @@ class MainActivity : AppCompatActivity() {
         fragmentTransaction.commitNow()
     }
 
-    private fun observeCategoriesUpdate() {
-        mainViewModel.categories.observe(this) { categories ->
+    private fun observeCategories() {
+        viewModel.categories.observe(this) { categories ->
             updateCategoriesGroupItem(categories)
         }
     }
 
     private fun updateCategoriesGroupItem(categories: List<Category>) {
-        val menu = binding.navigationView.menu
+        val menu = binding.navMenu.menu
         val categoriesGroupItem = menu.findItem(R.id.group_categories)
         val subMenu = categoriesGroupItem.subMenu
 
@@ -213,7 +200,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun onQueryTextChange(newText: String?): Boolean {
                 currentSearchQuery = newText
-                EventBus.getDefault().post(Event.SearchNotesEvent(newText))
+                EventBus.getDefault().post(Event.SearchNotesEvent(currentSearchQuery))
                 return true
             }
         })

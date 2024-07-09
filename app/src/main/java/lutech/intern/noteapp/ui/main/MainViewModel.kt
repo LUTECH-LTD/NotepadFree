@@ -8,10 +8,10 @@ import lutech.intern.noteapp.data.repository.CategoryRepository
 import lutech.intern.noteapp.database.NoteDatabase
 
 class MainViewModel : ViewModel() {
-    private val categoryRepository by lazy {
-        CategoryRepository(
-            NoteDatabase.getDatabase(NoteApplication.context).categoryDao()
-        )
+    private var categoryRepository: CategoryRepository
+    init {
+        val categoryDao = NoteDatabase.getDatabase(NoteApplication.context).categoryDao()
+        categoryRepository = CategoryRepository(categoryDao)
     }
 
     val categories: LiveData<List<Category>> = categoryRepository.getCategories()
