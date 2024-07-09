@@ -195,7 +195,7 @@ class NotesFragment : Fragment() {
 
     private fun launcherNoteEditorActivity(note: Note) {
         val intent = Intent(requireContext(), NoteEditorActivity::class.java)
-        intent.putExtra(Constants.EXTRA_NOTE, note)
+        intent.putExtra(Constants.EXTRA_NOTE_ID, note.noteId)
         startActivity(intent)
     }
 

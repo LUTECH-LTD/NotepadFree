@@ -1,6 +1,7 @@
 package lutech.intern.noteapp.ui.editor
 
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
@@ -31,12 +32,17 @@ class NoteEditorViewModel : ViewModel() {
             NoteDatabase.getDatabase(NoteApplication.context).noteCategoryCrossRefDao()
         )
     }
+
+    private val _note = MutableLiveData<Note>()
+    val note : LiveData<Note> = _note
+
     val categoryWithNotes: LiveData<List<CategoryWithNotes>> = categoryRepository.getCategoryWithNotes()
 
     val categories: LiveData<List<Category>> = categoryRepository.getAllCategories()
 
     fun update(note: Note) = viewModelScope.launch {
         noteRepository.update(note)
+        getNoteById(note.noteId)
     }
 
     fun deleteNote(note: Note) = viewModelScope.launch {
@@ -49,5 +55,9 @@ class NoteEditorViewModel : ViewModel() {
 
     fun deleteNoteCategoryCrossRef(noteId: Long, categoryId: Long) = viewModelScope.launch {
         noteCategoryCrossRepository.delete(noteId, categoryId)
+    }
+
+    fun getNoteById(noteId: Long) {
+        _note.value = noteRepository.getNoteById(noteId)
     }
 }
