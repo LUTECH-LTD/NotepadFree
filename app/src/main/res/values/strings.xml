@@ -30,4 +30,29 @@
     <string name="enter_title">Enter title...</string>
     <string name="enter_text">Enter text...</string>
     <string name="untitled">Untitled</string>
+    <string name="last_edit">Last edit: </string>
+    <string name="created">Created: </string>
+
+    <string-array name="themeColorHex">
+        <item>#F9F8C0</item>
+        <item>#EF9A9A</item>
+        <item>#B39DDB</item>
+        <item>#81D4FA</item>
+        <item>#A5D6A7</item>
+        <item>#FFF59D</item>
+        <item>#FFAB91</item>
+        <item>#B0BEC5</item>
+        <item>#F48FB1</item>
+        <item>#9FA8DA</item>
+        <item>#80DEEA</item>
+        <item>#C5E1A5</item>
+        <item>#FFE082</item>
+        <item>#BCAAA4</item>
+        <item>#CE93D8</item>
+        <item>#90CAF9</item>
+        <item>#80CBC4</item>
+        <item>#E6EE9C</item>
+        <item>#FFCC80</item>
+        <item>#EEEEEE</item>
+    </string-array>
 </resources>

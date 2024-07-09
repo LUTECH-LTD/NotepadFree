@@ -14,16 +14,16 @@ import lutech.intern.noteapp.data.entity.CategoryWithNotes
 @Dao
 interface CategoryDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insert(category: Category)
+    suspend fun insert(category: Category) :Long
 
     @Update
-    suspend fun update(category: Category)
+    suspend fun update(category: Category) : Int
 
     @Delete
-    suspend fun delete(category: Category)
+    suspend fun delete(category: Category) : Int
 
-    @Query("SELECT * FROM category")
-    fun fetchAllCategories(): LiveData<List<Category>>
+    @Query("SELECT * FROM category ORDER BY categoryId ASC")
+    fun getAllCategories(): LiveData<List<Category>>
 
     @Query("SELECT * FROM Category WHERE name =:name")
     fun getCategoryByName(name: String): Category?

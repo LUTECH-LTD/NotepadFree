@@ -14,8 +14,8 @@ class NoteRepository(private val noteDao: NoteDao) {
         return noteDao.getNoteWithCategories()
     }
 
-    suspend fun insert(note: Note) {
-        noteDao.insert(note)
+    suspend fun insert(note: Note): Long {
+        return noteDao.insert(note)
     }
 
     suspend fun update(note: Note) {
@@ -24,5 +24,9 @@ class NoteRepository(private val noteDao: NoteDao) {
 
     suspend fun delete(note: Note) {
         noteDao.delete(note)
+    }
+
+    suspend fun getNoteById(noteId: Long): Note? {
+        return noteDao.getNoteById(noteId)
     }
 }

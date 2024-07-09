@@ -1,9 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+
+    <!-- Base application theme -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="colorPrimary">@color/color_brown</item>
+        <item name="colorPrimaryVariant">@color/color_brown</item>
+        <item name="colorOnPrimary">@color/color_white</item>
+        <item name="colorOnSecondary">@color/color_white</item>
+        <item name="colorAccent">#6A5437</item>
+        <item name="actionMenuTextColor">@color/color_white</item>
         <item name="android:statusBarColor">@color/color_black_medium</item>
         <item name="android:windowBackground">@color/color_beige_medium</item>
-        <item name="colorAccent">@color/color_brown</item>
+        <item name="actionOverflowButtonStyle">@style/MyOverflowButtonStyle</item>
+        <item name="windowActionModeOverlay">true</item>
+        <item name="android:actionModeBackground">@color/color_brown</item>
+        <item name="android:actionModeCloseDrawable">@drawable/ic_back</item>
+        <item name="actionModeStyle">@style/CustomActionModeStyle</item>
     </style>
+
+    <!-- Style for overflow button -->
+    <style name="MyOverflowButtonStyle" parent="Widget.AppCompat.ActionButton.Overflow">
+        <item name="android:tint">@color/color_white</item>
+    </style>
+
+    <!-- Custom style for ActionMode -->
+    <style name="CustomActionModeStyle" parent="Base.Widget.AppCompat.ActionMode">
+        <item name="titleTextStyle">@style/CustomActionModeTextStyle</item>
+    </style>
+
+    <!-- Custom text style for ActionMode title -->
+    <style name="CustomActionModeTextStyle" parent="TextAppearance.AppCompat.Widget.ActionMode.Title">
+        <item name="android:textColor">@color/color_white</item>
+    </style>
+
 </resources>

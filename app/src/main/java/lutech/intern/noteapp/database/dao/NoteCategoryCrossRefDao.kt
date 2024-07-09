@@ -8,8 +8,8 @@ import lutech.intern.noteapp.data.entity.relations.NoteCategoryCrossRef
 
 @Dao
 interface NoteCategoryCrossRefDao {
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insert(join: NoteCategoryCrossRef)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(noteCategoryCrossRef: NoteCategoryCrossRef)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(noteCategoryCrossRefs: List<NoteCategoryCrossRef>)
