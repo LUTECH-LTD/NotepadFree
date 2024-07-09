@@ -16,7 +16,7 @@ import lutech.intern.noteapp.databinding.FragmentCategoriesBinding
 
 class CategoriesFragment : Fragment() {
     private val binding by lazy { FragmentCategoriesBinding.inflate(layoutInflater) }
-    private val categoryViewModel: CategoryViewModel by viewModels()
+    private val viewModel: CategoryViewModel by viewModels()
     private val categoryAdapter by lazy { CategoryAdapter() }
 
     override fun onCreateView(
@@ -34,8 +34,8 @@ class CategoriesFragment : Fragment() {
     }
 
     private fun observeViewModel() {
-        categoryViewModel.categories.observe(viewLifecycleOwner) { categories ->
-            categoryAdapter.submitCategories(categories)
+        viewModel.categories.observe(viewLifecycleOwner) {
+            categoryAdapter.submitCategories(it)
         }
     }
 
@@ -55,21 +55,17 @@ class CategoriesFragment : Fragment() {
                 showDeleteCategoryDialog(category)
             }
         })
-
     }
 
     private fun handleInsertCategory() {
         val name = binding.edtName.text.toString().trim()
-        if (name.isEmpty()) {
-            return
+        if (name.isNotEmpty()) {
+            insertCategory(Category(name = name))
         }
-
-        val category = Category(name = name)
-        insertCategory(category)
     }
 
     private fun insertCategory(category: Category) {
-        categoryViewModel.insertCategory(category) { isSuccess ->
+        viewModel.insert(category) { isSuccess ->
             if (isSuccess) {
                 binding.edtName.text?.clear()
             }
@@ -78,9 +74,7 @@ class CategoriesFragment : Fragment() {
 
     private fun showEditCategoryDialog(category: Category) {
         val dialogBinding = DialogEditCategoryBinding.inflate(layoutInflater)
-
-        val builder = AlertDialog.Builder(requireContext())
-        builder.apply {
+        val builder = AlertDialog.Builder(requireContext()).apply {
             setView(dialogBinding.root)
             setPositiveButton(R.string.ok, null)
             setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
@@ -91,7 +85,7 @@ class CategoriesFragment : Fragment() {
         val dialog = builder.create()
         dialog.show()
 
-        dialogBinding.nameEditText.setText(category.name)
+        dialogBinding.edtName.setText(category.name)
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             handleUpdateCategory(dialogBinding, category, dialog)
         }
@@ -102,35 +96,32 @@ class CategoriesFragment : Fragment() {
         category: Category,
         dialog: Dialog,
     ) {
-        val name = dialogBinding.nameEditText.text.toString().trim()
-        if (name.isEmpty()) {
-            dialogBinding.messageError.visibility = View.VISIBLE
-            return
+        val name = dialogBinding.edtName.text.toString().trim()
+        if (name.isNotEmpty()) {
+            updateCategory(category = Category(category.categoryId, name), dialog, dialogBinding)
+        } else {
+            dialogBinding.tvError.visibility = View.VISIBLE
         }
-
-        val categoryToUpdate = Category(category.categoryId, name)
-        updateCategory(categoryToUpdate, dialog, dialogBinding)
     }
 
     private fun updateCategory(
         category: Category,
         dialog: Dialog,
-        dialogBinding: DialogEditCategoryBinding
+        dialogBinding: DialogEditCategoryBinding,
     ) {
-        categoryViewModel.updateCategory(category) { isSuccess ->
+        viewModel.update(category) { isSuccess ->
             if (isSuccess) {
                 dialog.dismiss()
-                dialogBinding.messageError.visibility = View.GONE
+                dialogBinding.tvError.visibility = View.GONE
             } else {
-                dialogBinding.messageError.visibility = View.VISIBLE
+                dialogBinding.tvError.visibility = View.VISIBLE
             }
         }
     }
 
     private fun showDeleteCategoryDialog(category: Category) {
-        val builder = AlertDialog.Builder(requireContext())
-        builder.apply {
-            setMessage("Delete category '${category.name}'? Notes from the category won't be deleted.")
+        val builder = AlertDialog.Builder(requireContext()).apply {
+            setMessage(getString(R.string.delete_category_confirmation, category.name))
             setPositiveButton(R.string.ok) { _, _ ->
                 deleteCategory(category)
             }
@@ -144,7 +135,7 @@ class CategoriesFragment : Fragment() {
     }
 
     private fun deleteCategory(category: Category) {
-        categoryViewModel.deleteCategory(category)
+        viewModel.delete(category)
     }
 
     companion object {

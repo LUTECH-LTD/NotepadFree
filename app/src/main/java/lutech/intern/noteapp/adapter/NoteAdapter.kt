@@ -51,7 +51,6 @@ class NoteAdapter(private val context: Context) :
 
     inner class NoteViewHolder(private val binding: ItemNoteBinding) : ViewHolder(binding.root) {
         fun onBind(noteWithCategories: NoteWithCategories) {
-            Log.e(Constants.TAG, "onBind: $selectedNotes")
             binding.titleTextView.text = getDisplayNoteTitle(noteWithCategories.note)
             binding.dateTextView.text = getDisplayNoteDateTime(noteWithCategories.note)
             binding.categoryNameTextView.text =
@@ -84,17 +83,17 @@ class NoteAdapter(private val context: Context) :
         return when (PreferencesManager.getSortMode()) {
             SortNoteMode.CREATION_DATE_NEWEST.toString(),
             SortNoteMode.CREATION_DATE_OLDEST.toString() -> {
-                context.getString(R.string.created).plus(DateTimeUtils.getFormattedDateTime(note.dateCreate))
+                context.getString(R.string.created, DateTimeUtils.getFormattedDateTime(note.dateCreate))
             }
 
             else -> {
-                context.getString(R.string.last_edit).plus(DateTimeUtils.getFormattedDateTime(note.lastUpdate))
+                context.getString(R.string.last_edit,DateTimeUtils.getFormattedDateTime(note.lastUpdate))
             }
         }
     }
 
     private fun getDisplayNoteCategories(categories: List<Category>): String {
-        val maxCategoriesToShow = 4
+        val maxCategoriesToShow = 3
         val categoryNames = categories.take(maxCategoriesToShow).joinToString(", ") { it.name }
         val remainingCategoriesCount = categories.size - maxCategoriesToShow
 

@@ -34,7 +34,7 @@ class NotesViewModel : ViewModel() {
     }
 
     val noteWithCategories: LiveData<List<NoteWithCategories>> = noteRepository.fetchNoteWithCategories()
-    val categories: LiveData<List<Category>> = categoryRepository.getAllCategories()
+    val categories: LiveData<List<Category>> = categoryRepository.getCategories()
 
     fun insert(note: Note, callback: (Note) -> Unit) = viewModelScope.launch {
         val noteId = noteRepository.insert(note)

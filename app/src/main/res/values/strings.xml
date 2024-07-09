@@ -30,8 +30,9 @@
     <string name="enter_title">Enter title...</string>
     <string name="enter_text">Enter text...</string>
     <string name="untitled">Untitled</string>
-    <string name="last_edit">Last edit: </string>
-    <string name="created">Created: </string>
+    <string name="last_edit">Last edit: %1$s </string>
+    <string name="created">Created: %1$s</string>
+    <string name="delete_category_confirmation">Delete category \'%1$s\'\? Notes from the category won\'t be deleted.</string>
 
     <string-array name="themeColorHex">
         <item>#F9F8C0</item>
