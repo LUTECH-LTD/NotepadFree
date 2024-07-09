@@ -135,6 +135,7 @@ class MainActivity : AppCompatActivity() {
         setToolbarTitle(getString(R.string.app_name), subTitle)
         navMenuItemIdSelected = navMenuId
         EventBus.getDefault().post(Event.LoadNotesEvent)
+        invalidateOptionsMenu()
     }
 
     private fun loadFragment(fragment: Fragment, tag: String) {
