@@ -245,6 +245,7 @@ class NotesFragment : Fragment() {
 
     private fun searchNotes(notes: List<NoteWithCategories>, query: String) {
         val searchNotes = filterAndSortNotes(notes).filter {
+            noteAdapter.setSearchKeyword(query)
             it.note.title.lowercase().contains(query.lowercase())
         }
         noteAdapter.submitList(searchNotes)

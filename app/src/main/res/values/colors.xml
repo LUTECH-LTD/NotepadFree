@@ -12,5 +12,6 @@
     <color name="color_blue">#0908AC</color>
     <color name="color_menu_enabled">#80FFFFFF</color>
     <color name="color_menu_enabled1">#686868</color>
+    <color name="highlight_color">#BCFC9B</color>
 
 </resources>
