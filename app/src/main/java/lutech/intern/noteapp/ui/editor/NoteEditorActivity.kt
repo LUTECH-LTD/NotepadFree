@@ -4,7 +4,10 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.text.Editable
+import android.text.Spannable
 import android.text.SpannableString
+import android.text.TextWatcher
 import android.text.style.ForegroundColorSpan
 import android.util.Log
 import android.view.Menu
@@ -16,6 +19,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.ViewModel
 import com.github.dhaval2404.colorpicker.MaterialColorPickerDialog
 import com.github.dhaval2404.colorpicker.model.ColorShape
@@ -50,9 +54,9 @@ class NoteEditorActivity : AppCompatActivity() {
     private val categorySelectedAdapter by lazy {
         CategorySelectedAdapter()
     }
-
+    private val historyList = ArrayList<String>()
     private val openDocumentTreeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == AppCompatActivity.RESULT_OK) {
+        if (result.resultCode == RESULT_OK) {
             result.data?.data?.let { uri ->
                 getNoteFormIntent()?.let {
                     FileManager(this).exportFileToFolder(
@@ -81,6 +85,24 @@ class NoteEditorActivity : AppCompatActivity() {
                 categorySelectedAdapter.submitList(categories, noteCategories)
             }
         }
+
+        historyList.add(0, binding.textEditText.text.toString())
+        binding.textEditText.addTextChangedListener(object : TextWatcher{
+            override fun beforeTextChanged(s: CharSequence?, p1: Int, p2: Int, p3: Int) {
+            }
+
+            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+                s?.let {
+                    if(historyList.contains(it.toString())) return
+                    historyList.add(it.toString())
+                    invalidateOptionsMenu()
+                }
+            }
+        })
     }
 
     private fun initViews() {
@@ -125,7 +147,21 @@ class NoteEditorActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.menu_option_editor_note, menu)
+
         return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
+        if(historyList.size <= 1) {
+            val menuItem = menu?.findItem(R.id.menu_undo)
+            menuItem?.isEnabled = false
+            val spannable = SpannableString(menuItem?.title)
+            spannable.setSpan(ForegroundColorSpan(ContextCompat.getColor(this, R.color.color_menu_enabled)), 0, spannable.length, Spannable.SPAN_INCLUSIVE_INCLUSIVE)
+            menuItem?.title = spannable
+
+            menu?.findItem(R.id.menu_undo_all)?.isEnabled = false
+        }
+        return super.onPrepareOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -149,7 +185,14 @@ class NoteEditorActivity : AppCompatActivity() {
             }
 
             R.id.menu_undo -> {
-                showToast("Undo clicked")
+                if (historyList.size > 1) { // Kiểm tra nếu có ít nhất 2 phiên bản trong lịch sử
+                    historyList.removeAt(historyList.size - 1) // Xóa phiên bản hiện tại khỏi danh sách
+                    val lastVersion = historyList.last() // Lấy phiên bản trước đó
+                    binding.textEditText.setText(lastVersion)
+                    binding.textEditText.setSelection(lastVersion.length)
+                }
+                invalidateOptionsMenu()
+
                 true
             }
 
@@ -159,14 +202,32 @@ class NoteEditorActivity : AppCompatActivity() {
             }
 
             R.id.menu_undo_all -> {
-                showToast("Undo all clicked")
+                val builder = AlertDialog.Builder(this)
+                builder.apply {
+                    setMessage("Remove all of the note changes made since the last opening of the note?")
+                    setPositiveButton("Undo All") { _, _ ->
+                        binding.textEditText.setText(historyList.first())
+                        binding.textEditText.setSelection(historyList.first().length)
+                        historyList.clear()
+                        historyList.add(binding.textEditText.text.toString()   )
+                        invalidateOptionsMenu()
+                    }
+                    setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
+                        dialog.dismiss()
+                    }
+                }
+
+                val dialog = builder.create()
+                dialog.show()
+
                 true
             }
 
             R.id.menu_share -> {
+                val currentNote = getNoteFormIntent()
                 val sendIntent: Intent = Intent().apply {
                     action = Intent.ACTION_SEND
-                    putExtra(Intent.EXTRA_TEXT, "Nội dung chia sẻ của bạn ở đây")
+                    putExtra(Intent.EXTRA_TEXT, currentNote?.content)
                     type = "text/plain"
                 }
 
