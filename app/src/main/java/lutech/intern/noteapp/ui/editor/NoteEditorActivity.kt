@@ -424,13 +424,14 @@ class NoteEditorActivity : AppCompatActivity() {
             val nonSpaceCharCount = note.content.replace(" ", "").length
             val lineCount = note.content.split("\n").size
 
-            val message = """Words: $wordCount
-                            Wrapped lines: $lineCount
-                            Characters: ${note.content.length}
-                            Characters without whitespaces: $nonSpaceCharCount
-                            Created at: ${DateTimeUtils.getFormattedDateTime(note.dateCreate)}
-                            Last saved at: ${DateTimeUtils.getFormattedDateTime(note.lastUpdate)}
-                        """.trimIndent()
+            val message = """
+                                    Words: $wordCount
+                                    Wrapped lines: $lineCount
+                                    Characters: ${note.content.length}
+                                    Characters without whitespaces: $nonSpaceCharCount
+                                    Created at: ${DateTimeUtils.getFormattedDateTime(note.dateCreate)}
+                                    Last saved at: ${DateTimeUtils.getFormattedDateTime(note.lastUpdate)}
+                                """.trimIndent()
 
             AlertDialog.Builder(this).apply {
                 setMessage(message)

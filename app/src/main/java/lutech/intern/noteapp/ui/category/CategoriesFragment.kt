@@ -3,6 +3,7 @@ package lutech.intern.noteapp.ui.category
 import android.app.AlertDialog
 import android.app.Dialog
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -10,6 +11,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.viewModels
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.adapter.CategoryAdapter
+import lutech.intern.noteapp.constant.Constants
 import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.databinding.DialogEditCategoryBinding
 import lutech.intern.noteapp.databinding.FragmentCategoriesBinding
@@ -28,18 +30,19 @@ class CategoriesFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        observeViewModel()
-        initCategoriesRecyclerView()
+        observerCategories()
+        initRecyclerViewCategories()
         initEvents()
     }
 
-    private fun observeViewModel() {
+    private fun observerCategories() {
         viewModel.categories.observe(viewLifecycleOwner) {
             categoryAdapter.submitCategories(it)
+            Log.d(Constants.TAG, "observerCategories $it")
         }
     }
 
-    private fun initCategoriesRecyclerView() {
+    private fun initRecyclerViewCategories() {
         binding.rcvCategories.adapter = categoryAdapter
     }
 
