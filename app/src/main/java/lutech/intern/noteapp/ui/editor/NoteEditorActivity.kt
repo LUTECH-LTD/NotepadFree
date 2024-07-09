@@ -1,9 +1,17 @@
 package lutech.intern.noteapp.ui.editor
 
 import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.os.CancellationSignal
+import android.os.ParcelFileDescriptor
+import android.print.PageRange
+import android.print.PrintAttributes
+import android.print.PrintDocumentAdapter
+import android.print.PrintDocumentInfo
+import android.print.PrintManager
 import android.text.Editable
 import android.text.Spannable
 import android.text.SpannableString
@@ -42,6 +50,7 @@ import lutech.intern.noteapp.utils.FileManager
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.io.OutputStreamWriter
 import java.util.Stack
 import kotlin.math.log
@@ -50,44 +59,44 @@ class NoteEditorActivity : AppCompatActivity() {
     private val binding by lazy { ActivityNoteEditorBinding.inflate(layoutInflater) }
     private val noteEditorViewModel: NoteEditorViewModel by viewModels()
     private var categories: List<Category> = emptyList()
-    private var noteCategories: List<Category> = emptyList()
     private val categorySelectedAdapter by lazy {
         CategorySelectedAdapter()
     }
     private val historyList = ArrayList<String>()
-    private val openDocumentTreeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == RESULT_OK) {
-            result.data?.data?.let { uri ->
-                getNoteFormIntent()?.let {
-                    FileManager(this).exportFileToFolder(
-                        uri,
-                        it.title,
-                        it.content
-                    )
+    private val openDocumentTreeLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                result.data?.data?.let { uri ->
+                    getNoteFormIntent()?.let {
+                        FileManager(this).exportFileToFolder(
+                            uri,
+                            it.title,
+                            it.content
+                        )
+                    }
                 }
             }
         }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         initViews()
 
-        noteEditorViewModel.categories.observe(this) { categories ->
-            this.categories = categories
-            noteEditorViewModel.noteWithCategories.observe(this) { noteWithCategories ->
-                val currentId = getNoteFormIntent()?.noteId
-                val noteWithCategoriesFilter: List<NoteWithCategories> =
-                    noteWithCategories.filter { it.note.noteId == currentId }
-                this.noteCategories = noteWithCategoriesFilter[0].categories
-
-                categorySelectedAdapter.submitList(categories, noteCategories)
+        noteEditorViewModel.categoryWithNotes.observe(this) { categoryWithNotes ->
+            val currentId = getNoteFormIntent()?.noteId
+            categories = categoryWithNotes.map { it.category }
+            val selectedCategories = categoryWithNotes.filter {
+                it.notes.any { note -> note.noteId == currentId }
+            }.map {
+                it.category
             }
+
+            categorySelectedAdapter.submitList(categories, selectedCategories)
         }
 
         historyList.add(0, binding.textEditText.text.toString())
-        binding.textEditText.addTextChangedListener(object : TextWatcher{
+        binding.textEditText.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, p1: Int, p2: Int, p3: Int) {
             }
 
@@ -97,7 +106,7 @@ class NoteEditorActivity : AppCompatActivity() {
 
             override fun afterTextChanged(s: Editable?) {
                 s?.let {
-                    if(historyList.contains(it.toString())) return
+                    if (historyList.contains(it.toString())) return
                     historyList.add(it.toString())
                     invalidateOptionsMenu()
                 }
@@ -152,11 +161,18 @@ class NoteEditorActivity : AppCompatActivity() {
     }
 
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
-        if(historyList.size <= 1) {
+        if (historyList.size <= 1) {
             val menuItem = menu?.findItem(R.id.menu_undo)
             menuItem?.isEnabled = false
             val spannable = SpannableString(menuItem?.title)
-            spannable.setSpan(ForegroundColorSpan(ContextCompat.getColor(this, R.color.color_menu_enabled)), 0, spannable.length, Spannable.SPAN_INCLUSIVE_INCLUSIVE)
+            spannable.setSpan(
+                ForegroundColorSpan(
+                    ContextCompat.getColor(
+                        this,
+                        R.color.color_menu_enabled
+                    )
+                ), 0, spannable.length, Spannable.SPAN_INCLUSIVE_INCLUSIVE
+            )
             menuItem?.title = spannable
 
             menu?.findItem(R.id.menu_undo_all)?.isEnabled = false
@@ -209,7 +225,7 @@ class NoteEditorActivity : AppCompatActivity() {
                         binding.textEditText.setText(historyList.first())
                         binding.textEditText.setSelection(historyList.first().length)
                         historyList.clear()
-                        historyList.add(binding.textEditText.text.toString()   )
+                        historyList.add(binding.textEditText.text.toString())
                         invalidateOptionsMenu()
                     }
                     setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
@@ -250,8 +266,6 @@ class NoteEditorActivity : AppCompatActivity() {
                         setMessage("The '${it.title}' note will be deleted\nAre you sure")
                         setPositiveButton(R.string.ok) { _, _ ->
                             noteEditorViewModel.deleteNote(it)
-                            noteEditorViewModel.categories.removeObservers(this@NoteEditorActivity)
-                            noteEditorViewModel.noteWithCategories.removeObservers(this@NoteEditorActivity)
                             finish()
                         }
                         setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
@@ -278,9 +292,9 @@ class NoteEditorActivity : AppCompatActivity() {
                     val dialog = builder.create()
                     dialog.show()
                 } else {
-                    val mapDataToUpdate: MutableMap<Long, Boolean> = mutableMapOf()
+                    val selectedCategoriesState: MutableMap<Long, Boolean> = mutableMapOf()
                     categorySelectedAdapter.setOnCheckedChange { category, isChecked ->
-                        mapDataToUpdate[category.categoryId] = isChecked
+                        selectedCategoriesState[category.categoryId] = isChecked
                     }
 
                     val dialogBinding = DialogSelectCategoryBinding.inflate(layoutInflater)
@@ -290,8 +304,7 @@ class NoteEditorActivity : AppCompatActivity() {
                         setView(dialogBinding.root)
                         setPositiveButton(R.string.ok) { _, _ ->
                             // Handel event
-                            mapDataToUpdate.forEach { (categoryId, isChecked) ->
-                                Log.e(Constants.TAG, "showPopupMenu: $categoryId, $isChecked")
+                            selectedCategoriesState.forEach { (categoryId, isChecked) ->
                                 val currentId = getNoteFormIntent()?.noteId
 
                                 if (isChecked) {
@@ -308,11 +321,10 @@ class NoteEditorActivity : AppCompatActivity() {
                                     )
                                 }
                             }
-                            Toast.makeText(
-                                this@NoteEditorActivity,
-                                "Update success",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            Toast.makeText(this@NoteEditorActivity, "Update success", Toast.LENGTH_SHORT).show()
+                        }
+                        setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
+                            dialog.dismiss()
                         }
                     }
 
@@ -388,7 +400,7 @@ class NoteEditorActivity : AppCompatActivity() {
             }
 
             R.id.menu_print -> {
-                showToast("Print clicked")
+                printDocument("PhuHM")
                 true
             }
 
@@ -431,5 +443,33 @@ class NoteEditorActivity : AppCompatActivity() {
 
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun printDocument(textToPrint: String) {
+        val printManager = getSystemService(Context.PRINT_SERVICE) as PrintManager
+
+        val printAdapter = object : PrintDocumentAdapter() {
+            override fun onLayout(attributes: PrintAttributes?, oldAttributes: PrintAttributes?, cancellationSignal: CancellationSignal?, callback: LayoutResultCallback?, extras: Bundle?) {
+                if (cancellationSignal?.isCanceled == true) {
+                    callback?.onLayoutCancelled()
+                    return
+                }
+
+                val builder = PrintDocumentInfo.Builder("file_name")
+                builder.setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
+                    .setPageCount(1)
+                    .build()
+
+                callback?.onLayoutFinished(builder.build(), true)
+            }
+
+            override fun onWrite(pages: Array<out PageRange>?, destination: ParcelFileDescriptor?, cancellationSignal: CancellationSignal?, callback: WriteResultCallback?) {
+                val input = textToPrint.toByteArray().inputStream()
+                val output = FileOutputStream(destination?.fileDescriptor)
+                input.copyTo(output)
+            }
+        }
+
+        val printJob = printManager.print("JobName", printAdapter, null)
     }
 }

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import lutech.intern.noteapp.common.NoteApplication
 import lutech.intern.noteapp.data.entity.Category
+import lutech.intern.noteapp.data.entity.CategoryWithNotes
 import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.data.entity.NoteWithCategories
 import lutech.intern.noteapp.data.entity.relations.NoteCategoryCrossRef
@@ -30,7 +31,7 @@ class NoteEditorViewModel : ViewModel() {
             NoteDatabase.getDatabase(NoteApplication.context).noteCategoryCrossRefDao()
         )
     }
-    val noteWithCategories: LiveData<List<NoteWithCategories>> = noteRepository.fetchNoteWithCategories()
+    val categoryWithNotes: LiveData<List<CategoryWithNotes>> = categoryRepository.getCategoryWithNotes()
 
     val categories: LiveData<List<Category>> = categoryRepository.getAllCategories()
 
