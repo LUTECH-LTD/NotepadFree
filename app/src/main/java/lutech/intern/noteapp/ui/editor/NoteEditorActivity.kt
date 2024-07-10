@@ -6,6 +6,8 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.os.CancellationSignal
+import android.os.Handler
+import android.os.Looper
 import android.os.ParcelFileDescriptor
 import android.print.PageRange
 import android.print.PrintAttributes
@@ -17,8 +19,10 @@ import android.text.Spannable
 import android.text.SpannableString
 import android.text.TextWatcher
 import android.text.style.ForegroundColorSpan
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -48,6 +52,8 @@ class NoteEditorActivity : AppCompatActivity() {
     private var currentNoteId: Long = 0L
     private var currentNote: Note? = null
     private val historyContent = ArrayList<String>()
+    private var isEditMode = true
+    private var tapClick = 0
 
     private val openDocumentTreeLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -100,14 +106,34 @@ class NoteEditorActivity : AppCompatActivity() {
     private fun updateUI(note: Note) {
         binding.titleEditText.setText(note.title)
         binding.textEditText.setText(note.content)
+        binding.tvTitle.text = note.title
+        binding.tvContent.text = note.content
+
         if (Color.parseColor(note.color) == ContextCompat.getColor(this, R.color.color_beige)) {
-            binding.main.setBackgroundColor(ContextCompat.getColor(this, R.color.color_beige_medium))
+            binding.main.setBackgroundColor(
+                ContextCompat.getColor(
+                    this,
+                    R.color.color_beige_medium
+                )
+            )
             binding.toolbar.setBackgroundColor(ContextCompat.getColor(this, R.color.color_brown))
             binding.layoutEdit.setBackgroundResource(R.drawable.bg_beige_radius)
+            binding.layoutRead.setBackgroundResource(R.drawable.bg_beige_radius)
         } else {
-            binding.main.setBackgroundColor(DrawableUtils.darkenColor(Color.parseColor(note.color), 0.5f))
-            binding.toolbar.setBackgroundColor(DrawableUtils.darkenColor(Color.parseColor(note.color), 0.5f))
+            binding.main.setBackgroundColor(
+                DrawableUtils.darkenColor(
+                    Color.parseColor(note.color),
+                    0.5f
+                )
+            )
+            binding.toolbar.setBackgroundColor(
+                DrawableUtils.darkenColor(
+                    Color.parseColor(note.color),
+                    0.5f
+                )
+            )
             binding.layoutEdit.background = DrawableUtils.createSolidDrawable(this, note.color)
+            binding.layoutRead.background = DrawableUtils.createSolidDrawable(this, note.color)
         }
 
         if (!historyContent.contains(note.content)) {
@@ -133,6 +159,21 @@ class NoteEditorActivity : AppCompatActivity() {
                 }
             }
         })
+
+        binding.layoutRead.setOnClickListener {
+            tapClick++
+            Handler(Looper.getMainLooper()).postDelayed({
+                when (tapClick) {
+                    1 -> showToast("Tap twice to edit")
+                    2 -> {
+                        isEditMode = true
+                        invalidateOptionsMenu()
+                    }
+                }
+                tapClick = 0
+            }, 500)
+            Log.e(Constants.TAG, "tapClick: $tapClick")
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -156,6 +197,36 @@ class NoteEditorActivity : AppCompatActivity() {
             menuUndoItem?.title = spannable
             menu?.findItem(R.id.menu_undo_all)?.isEnabled = false
         }
+
+        // Cập nhật menu chuyển chế độ xem
+        if (isEditMode) {
+            binding.layoutEdit.visibility = View.VISIBLE
+            binding.layoutRead.visibility = View.GONE
+            binding.textEditText.requestFocus()
+            menu?.findItem(R.id.menu_enable_edit_mode)?.isVisible = false
+        } else {
+            menu?.findItem(R.id.menu_save)?.isVisible = false
+            menu?.findItem(R.id.menu_undo)?.isVisible = false
+            menu?.findItem(R.id.menu_redo)?.isVisible = false
+            menu?.findItem(R.id.menu_undo_all)?.isVisible = false
+            menu?.findItem(R.id.menu_switch_mode)?.isVisible = false
+            menu?.findItem(R.id.menu_show_formatting_bar)?.isVisible = false
+
+            menu?.findItem(R.id.menu_export)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+            menu?.findItem(R.id.menu_enable_edit_mode)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+            menu?.findItem(R.id.menu_delete)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
+            menu?.findItem(R.id.menu_search)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
+            menu?.findItem(R.id.menu_share)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
+            menu?.findItem(R.id.menu_print)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
+            menu?.findItem(R.id.menu_colorize)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
+            menu?.findItem(R.id.menu_categorize)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
+            menu?.findItem(R.id.menu_show_info)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
+
+
+            binding.layoutEdit.visibility = View.GONE
+            binding.layoutRead.visibility = View.VISIBLE
+        }
+
         return super.onPrepareOptionsMenu(menu)
     }
 
@@ -207,7 +278,14 @@ class NoteEditorActivity : AppCompatActivity() {
             }
 
             R.id.menu_switch_mode -> {
-                showToast("Switch mode clicked")
+                isEditMode = false
+                invalidateOptionsMenu()
+                return true
+            }
+
+            R.id.menu_enable_edit_mode -> {
+                isEditMode = true
+                invalidateOptionsMenu()
                 return true
             }
 
@@ -234,7 +312,13 @@ class NoteEditorActivity : AppCompatActivity() {
         val title = binding.titleEditText.text.toString().trim()
         val content = binding.textEditText.text.toString().trim()
         currentNote?.let {
-            val note = Note(noteId = it.noteId, title = title, content = content, color = it.color, dateCreate = it.dateCreate)
+            val note = Note(
+                noteId = it.noteId,
+                title = title,
+                content = content,
+                color = it.color,
+                dateCreate = it.dateCreate
+            )
             noteEditorViewModel.updateNote(note)
         }
     }
@@ -347,7 +431,8 @@ class NoteEditorActivity : AppCompatActivity() {
                             }
                         }
                     }
-                    Toast.makeText(this@NoteEditorActivity, "Update success", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@NoteEditorActivity, "Update success", Toast.LENGTH_SHORT)
+                        .show()
                 }
                 setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
                     dialog.dismiss()
@@ -380,6 +465,7 @@ class NoteEditorActivity : AppCompatActivity() {
                 .show()
         }
     }
+
     private fun printDocument(textToPrint: String) {
         val printManager = getSystemService(Context.PRINT_SERVICE) as PrintManager
 
@@ -418,6 +504,7 @@ class NoteEditorActivity : AppCompatActivity() {
 
         val printJob = printManager.print("JobName", printAdapter, null)
     }
+
     private fun showInfoNote() {
         currentNote?.let { note ->
             val wordCount = note.content.trim().split("\\s+".toRegex()).size

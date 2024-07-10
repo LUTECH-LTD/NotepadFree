@@ -28,8 +28,14 @@
         app:showAsAction="ifRoom|collapseActionView"/>
 
     <item
+        android:id="@+id/menu_enable_edit_mode"
+        android:icon="@drawable/ic_enable_edit_mode"
+        android:title="Enable edit mode" />
+
+    <item
         android:id="@+id/menu_export"
         android:title="Export text a file"
+        android:icon="@drawable/ic_export_fill"
         app:showAsAction="collapseActionView" />
 
     <item
@@ -53,6 +59,7 @@
         android:id="@+id/menu_colorize"
         android:title="Colorize"
         app:showAsAction="ifRoom|collapseActionView"/>
+
 
     <item
         android:id="@+id/menu_switch_mode"
