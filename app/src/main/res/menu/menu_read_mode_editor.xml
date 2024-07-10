@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/menu_switch_mode"
+        android:title="Switch to read mode"
+        android:icon="@drawable/ic_enable_edit_mode"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/menu_export"
+        android:icon="@drawable/ic_export_fill"
+        android:title="Export text a file"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/menu_delete"
+        android:title="Delete"
+        app:showAsAction="collapseActionView" />
+
+    <item
+        android:id="@+id/menu_search"
+        android:icon="@drawable/ic_search"
+        android:title="Search"
+        app:actionViewClass="androidx.appcompat.widget.SearchView"
+        app:showAsAction="collapseActionView" />
+
+    <item
+        android:id="@+id/menu_print"
+        android:title="Print"
+        app:showAsAction="collapseActionView" />
+
+    <item
+        android:id="@+id/menu_share"
+        android:title="Share"
+        app:showAsAction="collapseActionView" />
+
+    <item
+        android:id="@+id/menu_categorize"
+        android:title="Categorize"
+        app:showAsAction="collapseActionView" />
+
+    <item
+        android:id="@+id/menu_colorize"
+        android:title="Colorize"
+        app:showAsAction="collapseActionView" />
+
+    <item
+        android:id="@+id/menu_show_info"
+        android:title="Show info"
+        app:showAsAction="collapseActionView" />
+</menu>

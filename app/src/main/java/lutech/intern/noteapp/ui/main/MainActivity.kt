@@ -13,6 +13,9 @@ import androidx.appcompat.view.ActionMode
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.GravityCompat
 import androidx.fragment.app.Fragment
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.common.PreferencesManager
 import lutech.intern.noteapp.constant.FragmentTag
@@ -208,8 +211,6 @@ class MainActivity : AppCompatActivity() {
 
         searchItem?.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
             override fun onMenuItemActionExpand(item: MenuItem): Boolean {
-                binding.toolbar.menu.findItem(R.id.menu_search).isVisible = false
-                binding.toolbar.menu.findItem(R.id.menu_sort).isVisible = false
                 return true
             }
 
@@ -224,6 +225,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
+            R.id.menu_search -> {
+                CoroutineScope(Dispatchers.Default).launch {
+                    val menu = binding.toolbar.menu
+                    for (i in 0 until menu.size()) {
+                        menu.getItem(i).setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
+                    }
+                }
+            }
             R.id.menu_sort -> {
                 showSortOptionDialog()
             }

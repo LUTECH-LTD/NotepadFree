@@ -27,10 +27,14 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
 import com.github.dhaval2404.colorpicker.MaterialColorPickerDialog
 import com.github.dhaval2404.colorpicker.model.ColorShape
 import com.github.dhaval2404.colorpicker.model.ColorSwatch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.adapter.CategorySelectedAdapter
 import lutech.intern.noteapp.constant.Constants
@@ -39,9 +43,11 @@ import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.data.entity.relations.NoteCategoryCrossRef
 import lutech.intern.noteapp.databinding.ActivityNoteEditorBinding
 import lutech.intern.noteapp.databinding.DialogSelectCategoryBinding
+import lutech.intern.noteapp.event.Event
 import lutech.intern.noteapp.utils.DateTimeUtils
 import lutech.intern.noteapp.utils.DrawableUtils
 import lutech.intern.noteapp.utils.FileManager
+import org.greenrobot.eventbus.EventBus
 import java.io.FileOutputStream
 
 class NoteEditorActivity : AppCompatActivity() {
@@ -110,28 +116,13 @@ class NoteEditorActivity : AppCompatActivity() {
         binding.tvContent.text = note.content
 
         if (Color.parseColor(note.color) == ContextCompat.getColor(this, R.color.color_beige)) {
-            binding.main.setBackgroundColor(
-                ContextCompat.getColor(
-                    this,
-                    R.color.color_beige_medium
-                )
-            )
+            binding.main.setBackgroundColor(ContextCompat.getColor(this, R.color.color_beige_medium))
             binding.toolbar.setBackgroundColor(ContextCompat.getColor(this, R.color.color_brown))
             binding.layoutEdit.setBackgroundResource(R.drawable.bg_beige_radius)
             binding.layoutRead.setBackgroundResource(R.drawable.bg_beige_radius)
         } else {
-            binding.main.setBackgroundColor(
-                DrawableUtils.darkenColor(
-                    Color.parseColor(note.color),
-                    0.5f
-                )
-            )
-            binding.toolbar.setBackgroundColor(
-                DrawableUtils.darkenColor(
-                    Color.parseColor(note.color),
-                    0.5f
-                )
-            )
+            binding.main.setBackgroundColor(DrawableUtils.darkenColor(Color.parseColor(note.color), 0.5f))
+            binding.toolbar.setBackgroundColor(DrawableUtils.darkenColor(Color.parseColor(note.color), 0.5f))
             binding.layoutEdit.background = DrawableUtils.createSolidDrawable(this, note.color)
             binding.layoutRead.background = DrawableUtils.createSolidDrawable(this, note.color)
         }
@@ -177,57 +168,51 @@ class NoteEditorActivity : AppCompatActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.menu_option_editor_note, menu)
-        return super.onCreateOptionsMenu(menu)
-    }
+        menuInflater.inflate(if (isEditMode) R.menu.menu_option_editor_note else R.menu.menu_read_mode_editor, menu)
 
-    override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
-        if (historyContent.size <= 1) {
-            val menuUndoItem = menu?.findItem(R.id.menu_undo)
-            menuUndoItem?.isEnabled = false
-            val spannable = SpannableString(menuUndoItem?.title)
-            spannable.setSpan(
-                ForegroundColorSpan(
-                    ContextCompat.getColor(
-                        this,
-                        R.color.color_menu_enabled
-                    )
-                ), 0, spannable.length, Spannable.SPAN_INCLUSIVE_INCLUSIVE
-            )
-            menuUndoItem?.title = spannable
-            menu?.findItem(R.id.menu_undo_all)?.isEnabled = false
-        }
-
-        // Cập nhật menu chuyển chế độ xem
-        if (isEditMode) {
+        if(!isEditMode) {
+            binding.layoutEdit.visibility = View.GONE
+            binding.layoutRead.visibility = View.VISIBLE
+        } else {
             binding.layoutEdit.visibility = View.VISIBLE
             binding.layoutRead.visibility = View.GONE
             binding.textEditText.requestFocus()
-            menu?.findItem(R.id.menu_enable_edit_mode)?.isVisible = false
-        } else {
-            menu?.findItem(R.id.menu_save)?.isVisible = false
-            menu?.findItem(R.id.menu_undo)?.isVisible = false
-            menu?.findItem(R.id.menu_redo)?.isVisible = false
-            menu?.findItem(R.id.menu_undo_all)?.isVisible = false
-            menu?.findItem(R.id.menu_switch_mode)?.isVisible = false
-            menu?.findItem(R.id.menu_show_formatting_bar)?.isVisible = false
-
-            menu?.findItem(R.id.menu_export)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
-            menu?.findItem(R.id.menu_enable_edit_mode)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
-            menu?.findItem(R.id.menu_delete)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
-            menu?.findItem(R.id.menu_search)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
-            menu?.findItem(R.id.menu_share)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
-            menu?.findItem(R.id.menu_print)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
-            menu?.findItem(R.id.menu_colorize)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
-            menu?.findItem(R.id.menu_categorize)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
-            menu?.findItem(R.id.menu_show_info)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
-
-
-            binding.layoutEdit.visibility = View.GONE
-            binding.layoutRead.visibility = View.VISIBLE
+            // Undo - Undo all update menu
+            if (historyContent.size <= 1) {
+                binding.toolbar.menu.findItem(R.id.menu_undo).isEnabled = false
+                binding.toolbar.menu.findItem(R.id.menu_undo_all).isEnabled = false
+            } else {
+                binding.toolbar.menu.findItem(R.id.menu_undo).isEnabled = true
+                binding.toolbar.menu.findItem(R.id.menu_undo_all).isEnabled = true
+            }
         }
 
-        return super.onPrepareOptionsMenu(menu)
+        // Search event
+        val searchItem = menu?.findItem(R.id.menu_search)
+        val searchView = searchItem?.actionView as? SearchView
+
+        searchView?.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                return true
+            }
+        })
+
+        searchItem?.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
+            override fun onMenuItemActionExpand(item: MenuItem): Boolean {
+                return true
+            }
+
+            override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
+                invalidateOptionsMenu()
+                return true
+            }
+        })
+
+        return super.onCreateOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -249,6 +234,16 @@ class NoteEditorActivity : AppCompatActivity() {
 
             R.id.menu_undo_all -> {
                 undoAllNote()
+                true
+            }
+
+            R.id.menu_search -> {
+                CoroutineScope(Dispatchers.Default).launch {
+                    val menu = binding.toolbar.menu
+                    for (i in 0 until menu.size()) {
+                        menu.getItem(i).setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
+                    }
+                }
                 true
             }
 
@@ -278,13 +273,7 @@ class NoteEditorActivity : AppCompatActivity() {
             }
 
             R.id.menu_switch_mode -> {
-                isEditMode = false
-                invalidateOptionsMenu()
-                return true
-            }
-
-            R.id.menu_enable_edit_mode -> {
-                isEditMode = true
+                isEditMode = !isEditMode
                 invalidateOptionsMenu()
                 return true
             }
