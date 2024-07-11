@@ -39,7 +39,9 @@ import com.github.dhaval2404.colorpicker.model.ColorShape
 import com.github.dhaval2404.colorpicker.model.ColorSwatch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.adapter.CategorySelectedAdapter
 import lutech.intern.noteapp.constant.Constants
@@ -53,6 +55,7 @@ import lutech.intern.noteapp.utils.DateTimeUtils
 import lutech.intern.noteapp.utils.DrawableUtils
 import lutech.intern.noteapp.utils.FileManager
 import java.io.FileOutputStream
+import kotlin.math.log
 
 class NoteEditorActivity : AppCompatActivity() {
     private val binding by lazy { ActivityNoteEditorBinding.inflate(layoutInflater) }
@@ -316,15 +319,14 @@ class NoteEditorActivity : AppCompatActivity() {
             }
 
             R.id.menu_search -> {
-                CoroutineScope(Dispatchers.Default).launch {
+                GlobalScope.launch {
                     val menu = binding.toolbar.menu
                     for (i in 0 until menu.size()) {
                         menu.getItem(i).setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
                     }
-
+                    binding.toolbar.menu.findItem(R.id.menu_search_custom).isVisible = true
+                    binding.toolbar.menu.findItem(R.id.menu_search_custom).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
                 }
-                binding.toolbar.menu.findItem(R.id.menu_search_custom).isVisible = true
-                binding.toolbar.menu.findItem(R.id.menu_search_custom).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
                 true
             }
 
