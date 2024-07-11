@@ -18,15 +18,18 @@ import android.text.Editable
 import android.text.Spannable
 import android.text.SpannableString
 import android.text.TextWatcher
-import android.text.style.ForegroundColorSpan
+import android.text.style.BackgroundColorSpan
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.AppCompatImageButton
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
 import com.github.dhaval2404.colorpicker.MaterialColorPickerDialog
@@ -38,16 +41,15 @@ import kotlinx.coroutines.launch
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.adapter.CategorySelectedAdapter
 import lutech.intern.noteapp.constant.Constants
+import lutech.intern.noteapp.data.IndexRange
 import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.data.entity.relations.NoteCategoryCrossRef
 import lutech.intern.noteapp.databinding.ActivityNoteEditorBinding
 import lutech.intern.noteapp.databinding.DialogSelectCategoryBinding
-import lutech.intern.noteapp.event.Event
 import lutech.intern.noteapp.utils.DateTimeUtils
 import lutech.intern.noteapp.utils.DrawableUtils
 import lutech.intern.noteapp.utils.FileManager
-import org.greenrobot.eventbus.EventBus
 import java.io.FileOutputStream
 
 class NoteEditorActivity : AppCompatActivity() {
@@ -60,6 +62,7 @@ class NoteEditorActivity : AppCompatActivity() {
     private val historyContent = ArrayList<String>()
     private var isEditMode = true
     private var tapClick = 0
+    private var indexRange = 0
 
     private val openDocumentTreeLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -107,6 +110,68 @@ class NoteEditorActivity : AppCompatActivity() {
 
             categorySelectedAdapter.submitList(categories, selectedCategories)
         }
+
+        noteEditorViewModel.indexRanges.observe(this) { list ->
+            Log.d(Constants.TAG, "observeDataViewModel: $list")
+            val menu = binding.toolbar.menu
+            val itemSearchCustom = menu.findItem(R.id.menu_search_custom)
+            val actionView = itemSearchCustom?.actionView
+            val content = binding.textEditText.text.toString().trim()
+
+            actionView?.let { view ->
+                if(list.isEmpty()) {
+                    view.findViewById<LinearLayout>(R.id.main).alpha = 0.5F
+                    view.findViewById<AppCompatImageButton>(R.id.btnUp).isEnabled = false
+                    view.findViewById<AppCompatImageButton>(R.id.btnDown).isEnabled = false
+                    view.findViewById<TextView>(R.id.tvCountSearch)?.text = "0/0"
+
+                    binding.textEditText.setText(content)
+                    binding.tvContent.text = content
+                } else {
+                    view.findViewById<LinearLayout>(R.id.main).alpha = 1F
+                    view.findViewById<AppCompatImageButton>(R.id.btnUp).isEnabled = true
+                    view.findViewById<AppCompatImageButton>(R.id.btnDown).isEnabled = true
+                    view.findViewById<TextView>(R.id.tvCountSearch).text = "${indexRange + 1}/${list.size}"
+                    customSpannableContentNote(content, list)
+
+                    // action click
+                    view.findViewById<AppCompatImageButton>(R.id.btnDown).setOnClickListener {
+                        Log.d(Constants.TAG, "btnDown setOnClickListener")
+                        indexRange = if (indexRange == 0) list.size - 1 else indexRange - 1
+                        customSpannableContentNote(content, list)
+                        view.findViewById<TextView>(R.id.tvCountSearch).text = "${indexRange + 1}/${list.size}"
+                    }
+
+                    view.findViewById<AppCompatImageButton>(R.id.btnUp).setOnClickListener {
+                        Log.d(Constants.TAG, "btnUp setOnClickListener")
+                        indexRange = if (indexRange < list.size - 1) indexRange + 1 else 0
+                        customSpannableContentNote(content, list)
+                        view.findViewById<TextView>(R.id.tvCountSearch).text = "${indexRange + 1}/${list.size}"
+                    }
+                }
+            }
+        }
+    }
+
+    private fun customSpannableContentNote(content: String, list: List<IndexRange>) {
+        val spannableString = SpannableString(content)
+        for (range in list) {
+            val color = if (list[indexRange] == range) {
+                ContextCompat.getColor(this, R.color.highlight_color2)
+            } else {
+                ContextCompat.getColor(this, R.color.highlight_color)
+            }
+
+            spannableString.setSpan(
+                BackgroundColorSpan(color),
+                range.start,
+                range.end,
+                SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+        }
+
+        binding.textEditText.setText(spannableString)
+        binding.tvContent.text = spannableString
     }
 
     private fun updateUI(note: Note) {
@@ -168,9 +233,10 @@ class NoteEditorActivity : AppCompatActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        Log.d(Constants.TAG, "onCreateOptionsMenu:")
         menuInflater.inflate(if (isEditMode) R.menu.menu_option_editor_note else R.menu.menu_read_mode_editor, menu)
 
-        if(!isEditMode) {
+        if (!isEditMode) {
             binding.layoutEdit.visibility = View.GONE
             binding.layoutRead.visibility = View.VISIBLE
         } else {
@@ -197,6 +263,10 @@ class NoteEditorActivity : AppCompatActivity() {
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
+                val content = binding.textEditText.text.toString().trim()
+                val query = newText ?: ""
+                indexRange = 0
+                noteEditorViewModel.searchContentNote(content, query)
                 return true
             }
         })
@@ -243,7 +313,10 @@ class NoteEditorActivity : AppCompatActivity() {
                     for (i in 0 until menu.size()) {
                         menu.getItem(i).setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
                     }
+
                 }
+                binding.toolbar.menu.findItem(R.id.menu_search_custom).isVisible = true
+                binding.toolbar.menu.findItem(R.id.menu_search_custom).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
                 true
             }
 

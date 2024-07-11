@@ -26,6 +26,13 @@
         app:showAsAction="collapseActionView" />
 
     <item
+        android:id="@+id/menu_search_custom"
+        android:title="Custom Button"
+        android:visible="false"
+        app:actionLayout="@layout/layout_action_search_custom"
+        app:showAsAction="always" />
+
+    <item
         android:id="@+id/menu_print"
         android:title="Print"
         app:showAsAction="collapseActionView" />

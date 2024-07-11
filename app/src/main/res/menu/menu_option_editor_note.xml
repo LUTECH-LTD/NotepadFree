@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android"
+<menu xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/menu_save"
@@ -39,6 +40,14 @@
         android:title="Search"
         app:actionViewClass="androidx.appcompat.widget.SearchView"
         app:showAsAction="collapseActionView" />
+
+    <item
+        android:id="@+id/menu_search_custom"
+        android:title="Custom Button"
+        android:visible="false"
+        app:actionLayout="@layout/layout_action_search_custom"
+        app:showAsAction="always" />
+
     <item
         android:id="@+id/menu_export"
         android:icon="@drawable/ic_export_fill"
