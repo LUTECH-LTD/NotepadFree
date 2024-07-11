@@ -96,7 +96,6 @@
             android:enabled="false"
             android:focusable="false"
             android:paddingHorizontal="6dp"
-            android:maxLines="1"
             android:text=""
             android:textColor="@color/color_black_medium"
             android:textColorHint="@color/color_grey_medium"

@@ -184,8 +184,8 @@ class NoteEditorActivity : AppCompatActivity() {
     private fun updateUI(note: Note) {
         binding.titleEditText.setText(note.title)
         binding.textEditText.setText(note.content)
-        binding.tvTitle.text = note.title
-        binding.tvContent.text = note.content
+        binding.tvTitle.text = binding.titleEditText.text.toString()
+        binding.tvContent.text = binding.textEditText.text.toString()
 
         if (Color.parseColor(note.color) == ContextCompat.getColor(this, R.color.color_beige)) {
             binding.main.setBackgroundColor(ContextCompat.getColor(this, R.color.color_beige_medium))
