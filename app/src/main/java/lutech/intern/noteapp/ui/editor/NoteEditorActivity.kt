@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Bundle
 import android.os.CancellationSignal
 import android.os.Handler
@@ -17,6 +18,7 @@ import android.print.PrintManager
 import android.text.Editable
 import android.text.Spannable
 import android.text.SpannableString
+import android.text.SpannableStringBuilder
 import android.text.TextWatcher
 import android.text.style.BackgroundColorSpan
 import android.util.Log
@@ -63,6 +65,7 @@ class NoteEditorActivity : AppCompatActivity() {
     private var isEditMode = true
     private var tapClick = 0
     private var indexRange = 0
+    private var indexRanges: List<IndexRange>?= null
 
     private val openDocumentTreeLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -113,6 +116,7 @@ class NoteEditorActivity : AppCompatActivity() {
 
         noteEditorViewModel.indexRanges.observe(this) { list ->
             Log.d(Constants.TAG, "observeDataViewModel: $list")
+            indexRanges = list
             val menu = binding.toolbar.menu
             val itemSearchCustom = menu.findItem(R.id.menu_search_custom)
             val actionView = itemSearchCustom?.actionView
@@ -154,7 +158,7 @@ class NoteEditorActivity : AppCompatActivity() {
     }
 
     private fun customSpannableContentNote(content: String, list: List<IndexRange>) {
-        val spannableString = SpannableString(content)
+        val spannableString = SpannableStringBuilder(content)
         for (range in list) {
             val color = if (list[indexRange] == range) {
                 ContextCompat.getColor(this, R.color.highlight_color2)
@@ -170,7 +174,7 @@ class NoteEditorActivity : AppCompatActivity() {
             )
         }
 
-        binding.textEditText.setText(spannableString)
+        binding.textEditText.text = spannableString
         binding.tvContent.text = spannableString
     }
 
@@ -195,6 +199,10 @@ class NoteEditorActivity : AppCompatActivity() {
         if (!historyContent.contains(note.content)) {
             historyContent.add(note.content)
             invalidateOptionsMenu()
+        }
+
+        indexRanges?.let {
+            customSpannableContentNote(note.content, it)
         }
     }
 
