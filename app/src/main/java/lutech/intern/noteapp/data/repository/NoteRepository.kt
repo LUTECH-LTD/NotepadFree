@@ -3,6 +3,7 @@ package lutech.intern.noteapp.data.repository
 import androidx.lifecycle.LiveData
 import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.data.entity.NoteWithCategories
+import lutech.intern.noteapp.data.entity.NoteWithTextStyles
 import lutech.intern.noteapp.database.dao.NoteDao
 
 class NoteRepository(private val noteDao: NoteDao) {
@@ -12,6 +13,10 @@ class NoteRepository(private val noteDao: NoteDao) {
 
     fun getNoteWithCategories(): LiveData<List<NoteWithCategories>> {
         return noteDao.getNoteWithCategories()
+    }
+
+    fun getNoteWithTextStylesById(noteId: Long): NoteWithTextStyles? {
+        return noteDao.getNoteWithTextStylesById(noteId)
     }
 
     suspend fun insert(note: Note): Long {

@@ -14,7 +14,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:targetApi="31">
-        <activity
+        <activity android:windowSoftInputMode="adjustResize"
             android:name=".ui.editor.NoteEditorActivity"
             android:exported="false" />
         <activity
