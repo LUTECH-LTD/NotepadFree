@@ -8,13 +8,14 @@
         <item name="colorOnPrimary">@color/color_white</item>
         <item name="colorOnSecondary">@color/color_white</item>
         <item name="colorAccent">#6A5437</item>
-        <item name="actionMenuTextColor">@color/color_white</item>
+        <item name="actionMenuTextColor">@color/menu_item_color</item>
         <item name="android:statusBarColor">@color/color_black_medium</item>
         <item name="android:windowBackground">@color/color_beige_medium</item>
         <item name="actionOverflowButtonStyle">@style/MyOverflowButtonStyle</item>
         <item name="windowActionModeOverlay">true</item>
         <item name="android:actionModeBackground">@color/color_brown</item>
         <item name="android:actionModeCloseDrawable">@drawable/ic_back</item>
+        <item name="android:editTextColor">@android:color/white</item>
         <item name="actionModeStyle">@style/CustomActionModeStyle</item>
     </style>
 

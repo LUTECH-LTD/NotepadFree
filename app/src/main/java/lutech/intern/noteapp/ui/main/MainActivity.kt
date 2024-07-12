@@ -13,6 +13,9 @@ import androidx.appcompat.view.ActionMode
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.GravityCompat
 import androidx.fragment.app.Fragment
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.common.PreferencesManager
 import lutech.intern.noteapp.constant.FragmentTag
@@ -32,9 +35,9 @@ import org.greenrobot.eventbus.EventBus
 
 class MainActivity : AppCompatActivity() {
     private val binding by lazy { ActivityMainBinding.inflate(layoutInflater) }
-    private val mainViewModel: MainViewModel by viewModels()
-    var navMenuItemIdSelected: Int? = null
+    private val viewModel: MainViewModel by viewModels()
     private var actionMode: ActionMode? = null
+    var navMenuItemIdSelected: Int? = null
     var currentSearchQuery: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,12 +45,10 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         initToolbar()
         handleEvent()
-        observeCategoriesUpdate()
+        observeCategories()
 
         if (savedInstanceState == null) {
-            loadFragment(NotesFragment.newInstance(), FragmentTag.TAG_FRAGMENT_NOTES.toString())
-            setToolbarTitle(getString(R.string.app_name), null)
-            navMenuItemIdSelected = R.id.menu_notes
+            loadNotesFragment(null, R.id.menu_notes)
         }
     }
 
@@ -66,28 +67,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleEvent() {
-        binding.navigationView.setNavigationItemSelectedListener { item ->
+        binding.navMenu.setNavigationItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.menu_notes -> {
-                    loadFragment(
-                        NotesFragment.newInstance(),
-                        FragmentTag.TAG_FRAGMENT_NOTES.toString()
-                    )
-                    setToolbarTitle(getString(R.string.app_name), null)
-                    navMenuItemIdSelected = R.id.menu_notes
-                    EventBus.getDefault().post(Event.LoadNotesEvent)
-                    invalidateOptionsMenu()
+                    loadNotesFragment(null, R.id.menu_notes)
                 }
 
                 R.id.menu_uncategorized -> {
-                    loadFragment(
-                        NotesFragment.newInstance(),
-                        FragmentTag.TAG_FRAGMENT_NOTES.toString()
-                    )
-                    setToolbarTitle(getString(R.string.app_name), item.title)
-                    navMenuItemIdSelected = R.id.menu_uncategorized
-                    EventBus.getDefault().post(Event.LoadNotesEvent)
-                    invalidateOptionsMenu()
+                    loadNotesFragment(null, R.id.menu_uncategorized)
                 }
 
                 R.id.menu_edit_categories -> {
@@ -134,20 +121,24 @@ class MainActivity : AppCompatActivity() {
 
                 else -> {
                     if (item.groupId == R.id.group_categories) {
-                        loadFragment(
-                            NotesFragment.newInstance(),
-                            FragmentTag.TAG_FRAGMENT_NOTES.toString()
-                        )
-                        setToolbarTitle(getString(R.string.app_name), item.title)
-                        navMenuItemIdSelected = item.itemId
-                        EventBus.getDefault().post(Event.LoadNotesEvent)
-                        invalidateOptionsMenu()
+                        loadNotesFragment(item.title, item.itemId)
                     }
                 }
             }
             binding.drawerLayout.closeDrawers()
             true
         }
+    }
+
+    private fun loadNotesFragment(
+        subTitle: CharSequence?,
+        navMenuId: Int,
+    ) {
+        loadFragment(NotesFragment.newInstance(), FragmentTag.TAG_FRAGMENT_NOTES.toString())
+        setToolbarTitle(getString(R.string.app_name), subTitle)
+        navMenuItemIdSelected = navMenuId
+        EventBus.getDefault().post(Event.LoadNotesEvent)
+        invalidateOptionsMenu()
     }
 
     private fun loadFragment(fragment: Fragment, tag: String) {
@@ -170,14 +161,14 @@ class MainActivity : AppCompatActivity() {
         fragmentTransaction.commitNow()
     }
 
-    private fun observeCategoriesUpdate() {
-        mainViewModel.categories.observe(this) { categories ->
+    private fun observeCategories() {
+        viewModel.categories.observe(this) { categories ->
             updateCategoriesGroupItem(categories)
         }
     }
 
     private fun updateCategoriesGroupItem(categories: List<Category>) {
-        val menu = binding.navigationView.menu
+        val menu = binding.navMenu.menu
         val categoriesGroupItem = menu.findItem(R.id.group_categories)
         val subMenu = categoriesGroupItem.subMenu
 
@@ -213,15 +204,13 @@ class MainActivity : AppCompatActivity() {
 
             override fun onQueryTextChange(newText: String?): Boolean {
                 currentSearchQuery = newText
-                EventBus.getDefault().post(Event.SearchNotesEvent(newText))
+                EventBus.getDefault().post(Event.SearchNotesEvent(currentSearchQuery))
                 return true
             }
         })
 
         searchItem?.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
             override fun onMenuItemActionExpand(item: MenuItem): Boolean {
-                binding.toolbar.menu.findItem(R.id.menu_search).isVisible = false
-                binding.toolbar.menu.findItem(R.id.menu_sort).isVisible = false
                 return true
             }
 
@@ -236,6 +225,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
+            R.id.menu_search -> {
+                CoroutineScope(Dispatchers.Default).launch {
+                    val menu = binding.toolbar.menu
+                    for (i in 0 until menu.size()) {
+                        menu.getItem(i).setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
+                    }
+                }
+            }
             R.id.menu_sort -> {
                 showSortOptionDialog()
             }

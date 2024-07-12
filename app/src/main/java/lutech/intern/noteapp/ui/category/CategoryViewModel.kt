@@ -17,17 +17,17 @@ class CategoryViewModel : ViewModel() {
         categoryRepository = CategoryRepository(categoryDao)
     }
 
-    val categories: LiveData<List<Category>> = categoryRepository.getAllCategories()
+    val categories: LiveData<List<Category>> = categoryRepository.getCategories()
 
-    fun insertCategory(category: Category, callback: (Boolean) -> Unit) = viewModelScope.launch {
+    fun insert(category: Category, callback: (Boolean) -> Unit) = viewModelScope.launch {
         callback(categoryRepository.insert(category))
     }
 
-    fun updateCategory(category: Category, callback: (Boolean) -> Unit) = viewModelScope.launch {
+    fun update(category: Category, callback: (Boolean) -> Unit) = viewModelScope.launch {
         callback(categoryRepository.update(category))
     }
 
-    fun deleteCategory(category: Category) = viewModelScope.launch {
+    fun delete(category: Category) = viewModelScope.launch {
         categoryRepository.delete(category)
     }
 }

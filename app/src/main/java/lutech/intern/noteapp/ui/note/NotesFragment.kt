@@ -38,10 +38,12 @@ class NotesFragment : Fragment() {
     private val binding by lazy { FragmentNotesBinding.inflate(layoutInflater) }
     private val notesViewModel: NotesViewModel by viewModels()
     private val noteAdapter by lazy { NoteAdapter(requireContext()) }
-    private var notes: List<NoteWithCategories> = emptyList()
+    private var noteWithCategories: List<NoteWithCategories> = emptyList()
     private val categorySelectionAdapter by lazy { CategorySelectionAdapter() }
+    private lateinit var mainActivity: MainActivity
 
-    private val openDocumentTreeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+    private val openDocumentTreeLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == AppCompatActivity.RESULT_OK) {
                 result.data?.data?.let { uri ->
                     // Export file vào máy
@@ -64,26 +66,28 @@ class NotesFragment : Fragment() {
                             }
                         }
                     }
-                    (activity as MainActivity).finishActionMode()
+                    mainActivity.finishActionMode()
                 }
             }
         }
 
-    private val openDocumentLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == AppCompatActivity.RESULT_OK) {
-            result.data?.data?.let { uri ->
-                val note = FileManager(requireContext()).importFileFromFolder(uri)
-                note?.let {
-                    notesViewModel.insert(note) {}
+    private val openDocumentLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == AppCompatActivity.RESULT_OK) {
+                result.data?.data?.let { uri ->
+                    val note = FileManager(requireContext()).importFileFromFolder(uri)
+                    note?.let {
+                        notesViewModel.insertNote(note) {}
+                    }
                 }
             }
         }
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View {
+        mainActivity = (activity as MainActivity)
         return binding.root
     }
 
@@ -99,12 +103,12 @@ class NotesFragment : Fragment() {
     }
 
     private fun initRecyclerView() {
-        binding.notesRecyclerView.adapter = noteAdapter
+        binding.rcvNotes.adapter = noteAdapter
     }
 
     private fun observeDataViewModel() {
         notesViewModel.noteWithCategories.observe(viewLifecycleOwner) { list ->
-            notes = list
+            noteWithCategories = list
             reloadData()
         }
 
@@ -142,22 +146,21 @@ class NotesFragment : Fragment() {
     }
 
     private fun reloadData() {
-        noteAdapter.submitList(filterAndSortNotes(notes))
-        (activity as MainActivity).currentSearchQuery?.let {
+        noteAdapter.submitList(filterAndSortNotes(noteWithCategories))
+        mainActivity.currentSearchQuery?.let {
             EventBus.getDefault().post(Event.SearchNotesEvent(it))
         }
     }
 
     private fun handleEvent() {
-        binding.addButton.setOnClickListener {
-            notesViewModel.insert(Note()) { lastNoteInsert ->
-                val categoryId = (activity as MainActivity).navMenuItemIdSelected
-                categoryId?.let { id ->
-                    if (id != R.id.menu_uncategorized && id != R.id.menu_notes) {
+        binding.btnAdd.setOnClickListener {
+            notesViewModel.insertNote(Note()) { lastNoteInsert ->
+                mainActivity.navMenuItemIdSelected?.let { categoryId ->
+                    if (categoryId != R.id.menu_uncategorized && categoryId != R.id.menu_notes) {
                         notesViewModel.insertNoteCategoryCrossRef(
                             NoteCategoryCrossRef(
                                 lastNoteInsert.noteId,
-                                id.toLong()
+                                categoryId.toLong()
                             )
                         )
                     }
@@ -170,10 +173,7 @@ class NotesFragment : Fragment() {
             override fun onItemClickListener(note: Note) {
                 if (noteAdapter.isSelectedMode()) {
                     noteAdapter.toggleSelection(note)
-                    (activity as MainActivity).openActionMode()
-                    (activity as MainActivity).setTitleActionMode(
-                        noteAdapter.getSelectedNotesCount().toString()
-                    )
+                    mainActivity.setTitleActionMode(noteAdapter.getSelectedNotesCount().toString())
                 } else {
                     launcherNoteEditorActivity(note)
                 }
@@ -181,13 +181,11 @@ class NotesFragment : Fragment() {
 
             override fun onItemLongClickListener(note: Note) {
                 if (!noteAdapter.isSelectedMode()) {
-                    binding.addButton.visibility = View.GONE
                     noteAdapter.toggleSelection(note)
                     noteAdapter.setSelectedMode(true)
-                    (activity as MainActivity).openActionMode()
-                    (activity as MainActivity).setTitleActionMode(
-                        noteAdapter.getSelectedNotesCount().toString()
-                    )
+                    mainActivity.openActionMode()
+                    mainActivity.setTitleActionMode(noteAdapter.getSelectedNotesCount().toString())
+                    binding.btnAdd.visibility = View.GONE
                 }
             }
         })
@@ -195,7 +193,7 @@ class NotesFragment : Fragment() {
 
     private fun launcherNoteEditorActivity(note: Note) {
         val intent = Intent(requireContext(), NoteEditorActivity::class.java)
-        intent.putExtra(Constants.EXTRA_NOTE, note)
+        intent.putExtra(Constants.EXTRA_NOTE_ID, note.noteId)
         startActivity(intent)
     }
 
@@ -207,7 +205,7 @@ class NotesFragment : Fragment() {
             }
 
             is Event.SearchNotesEvent -> {
-                searchNotes(notes, event.query ?: "")
+                searchNotes(noteWithCategories, event.query ?: "")
             }
 
             is Event.SelectAllNotesEvent -> {
@@ -242,13 +240,12 @@ class NotesFragment : Fragment() {
                 }
                 openDocumentLauncher.launch(intent)
             }
-
-            else -> Unit
         }
     }
 
     private fun searchNotes(notes: List<NoteWithCategories>, query: String) {
         val searchNotes = filterAndSortNotes(notes).filter {
+            noteAdapter.setSearchKeyword(query)
             it.note.title.lowercase().contains(query.lowercase())
         }
         noteAdapter.submitList(searchNotes)
@@ -261,21 +258,19 @@ class NotesFragment : Fragment() {
             noteAdapter.clearSelectedNotes()
         }
         noteAdapter.setSelectedMode(true)
-        (activity as MainActivity).openActionMode()
-        (activity as MainActivity).setTitleActionMode(
-            noteAdapter.getSelectedNotesCount().toString()
-        )
-        binding.addButton.visibility = View.GONE
+        mainActivity.openActionMode()
+        mainActivity.setTitleActionMode(noteAdapter.getSelectedNotesCount().toString())
+        binding.btnAdd.visibility = View.GONE
     }
 
     private fun showDeleteNotesDialog() {
-        val list = noteAdapter.getSelectedNotes()
-        if (list.isNotEmpty()) {
+        val selectedCategories = noteAdapter.getSelectedNotes()
+        if (selectedCategories.isNotEmpty()) {
             val builder = AlertDialog.Builder(requireContext())
             builder.apply {
                 setMessage("Delete the selected notes?")
                 setPositiveButton(R.string.ok) { _, _ ->
-                    deleteNotes(list)
+                    deleteNotes(selectedCategories)
                 }
                 setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
                     dialog.dismiss()
@@ -290,13 +285,13 @@ class NotesFragment : Fragment() {
     private fun deleteNotes(list: List<Note>) {
         list.forEach { notesViewModel.deleteNote(it) }
         Toast.makeText(requireContext(), "Delete notes (${list.size})", Toast.LENGTH_SHORT).show()
-        (activity as MainActivity).finishActionMode()
+        mainActivity.finishActionMode()
     }
 
     private fun clearSelectedNotes() {
         noteAdapter.clearSelectedNotes()
         noteAdapter.setSelectedMode(false)
-        binding.addButton.visibility = View.VISIBLE
+        binding.btnAdd.visibility = View.VISIBLE
     }
 
     private fun showColorPickerDialog() {
@@ -308,17 +303,14 @@ class NotesFragment : Fragment() {
                 .setColorShape(ColorShape.SQAURE)
                 .setColorSwatch(ColorSwatch._200)
                 .setColors(resources.getStringArray(R.array.themeColorHex))
-                .setColorListener { color, colorHex ->
+                .setColorListener { _, colorHex ->
                     updateColorNotes(selectedNotes, colorHex)
                 }
                 .show()
         }
     }
 
-    private fun updateColorNotes(
-        selectedNotes: List<Note>,
-        colorHex: String
-    ) {
+    private fun updateColorNotes(selectedNotes: List<Note>, colorHex: String) {
         selectedNotes.forEach { note ->
             val noteUpdate = Note(
                 noteId = note.noteId,
@@ -329,7 +321,7 @@ class NotesFragment : Fragment() {
             )
             notesViewModel.updateNote(noteUpdate)
         }
-        (activity as MainActivity).finishActionMode()
+        mainActivity.finishActionMode()
     }
 
     private fun showPickerCategoryDialog() {
@@ -340,9 +332,7 @@ class NotesFragment : Fragment() {
                 val builder = AlertDialog.Builder(requireContext())
                 builder.apply {
                     setMessage("Categories can be added in the app's menu. To open the menu use menu in the top left corner off the note list screen.")
-                    setPositiveButton(R.string.ok) { _, _ ->
-
-                    }
+                    setPositiveButton(R.string.ok, null)
                 }
 
                 val dialog = builder.create()
@@ -369,10 +359,7 @@ class NotesFragment : Fragment() {
         }
     }
 
-    private fun updateCategoryNotes(
-        selectedCategories: List<Category>,
-        selectedNotes: List<Note>
-    ) {
+    private fun updateCategoryNotes(selectedCategories: List<Category>, selectedNotes: List<Note>) {
         if (selectedCategories.isNotEmpty()) {
             selectedNotes.forEach { note ->
                 selectedCategories.forEach { category ->
@@ -385,7 +372,7 @@ class NotesFragment : Fragment() {
                 }
             }
         }
-        (activity as MainActivity).finishActionMode()
+        mainActivity.finishActionMode()
     }
 
 

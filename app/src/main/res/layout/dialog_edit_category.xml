@@ -14,7 +14,7 @@
         android:textSize="14sp" />
 
     <androidx.appcompat.widget.AppCompatEditText
-        android:id="@+id/nameEditText"
+        android:id="@+id/edtName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="@string/new_category_name"
@@ -23,7 +23,7 @@
         android:textSize="16sp" />
 
     <TextView
-        android:id="@+id/messageError"
+        android:id="@+id/tvError"
         android:visibility="gone"
         android:layout_width="match_parent"
         android:textColor="@android:color/holo_red_light"

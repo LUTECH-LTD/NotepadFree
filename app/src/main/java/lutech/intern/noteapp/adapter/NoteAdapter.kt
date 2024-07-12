@@ -3,20 +3,21 @@ package lutech.intern.noteapp.adapter
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
-import android.util.Log
+import android.text.Spannable
+import android.text.SpannableString
+import android.text.style.BackgroundColorSpan
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.common.PreferencesManager
-import lutech.intern.noteapp.constant.Constants
 import lutech.intern.noteapp.constant.SortNoteMode
 import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.data.entity.NoteWithCategories
 import lutech.intern.noteapp.databinding.ItemNoteBinding
-import lutech.intern.noteapp.ui.main.MainActivity
 import lutech.intern.noteapp.utils.DateTimeUtils
 import lutech.intern.noteapp.utils.DrawableUtils
 
@@ -26,7 +27,11 @@ class NoteAdapter(private val context: Context) :
     private val selectedNotes = mutableListOf<Note>()
     private var isSelectedMode = false
     private var listener: OnItemClickListener? = null
-
+    private var searchKeyword: String = ""
+    fun setSearchKeyword(keyword: String) {
+        searchKeyword = keyword
+        notifyDataSetChanged()
+    }
     @SuppressLint("NotifyDataSetChanged")
     fun submitList(noteWithCategories: List<NoteWithCategories>) {
         this.noteWithCategories.clear()
@@ -51,7 +56,6 @@ class NoteAdapter(private val context: Context) :
 
     inner class NoteViewHolder(private val binding: ItemNoteBinding) : ViewHolder(binding.root) {
         fun onBind(noteWithCategories: NoteWithCategories) {
-            Log.e(Constants.TAG, "onBind: $selectedNotes")
             binding.titleTextView.text = getDisplayNoteTitle(noteWithCategories.note)
             binding.dateTextView.text = getDisplayNoteDateTime(noteWithCategories.note)
             binding.categoryNameTextView.text =
@@ -74,27 +78,44 @@ class NoteAdapter(private val context: Context) :
         }
     }
 
-    private fun getDisplayNoteTitle(note: Note): String {
-        return note.title.ifEmpty {
+    private fun getDisplayNoteTitle(note: Note): CharSequence {
+        val title = note.title.ifEmpty {
             context.getString(R.string.untitled)
         }
+
+        if (searchKeyword.isNotEmpty()) {
+            val spannable = SpannableString(title)
+            val startIndex = title.indexOf(searchKeyword, ignoreCase = true)
+            if (startIndex != -1) {
+                val highlightColor = ContextCompat.getColor(context, R.color.highlight_color)
+                val endIndex = startIndex + searchKeyword.length
+                spannable.setSpan(
+                    BackgroundColorSpan(highlightColor),
+                    startIndex, endIndex,
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+            return spannable
+        }
+
+        return title
     }
 
     private fun getDisplayNoteDateTime(note: Note): String {
         return when (PreferencesManager.getSortMode()) {
             SortNoteMode.CREATION_DATE_NEWEST.toString(),
             SortNoteMode.CREATION_DATE_OLDEST.toString() -> {
-                context.getString(R.string.created).plus(DateTimeUtils.getFormattedDateTime(note.dateCreate))
+                context.getString(R.string.created, DateTimeUtils.getFormattedDateTime(note.dateCreate))
             }
 
             else -> {
-                context.getString(R.string.last_edit).plus(DateTimeUtils.getFormattedDateTime(note.lastUpdate))
+                context.getString(R.string.last_edit,DateTimeUtils.getFormattedDateTime(note.lastUpdate))
             }
         }
     }
 
     private fun getDisplayNoteCategories(categories: List<Category>): String {
-        val maxCategoriesToShow = 4
+        val maxCategoriesToShow = 3
         val categoryNames = categories.take(maxCategoriesToShow).joinToString(", ") { it.name }
         val remainingCategoriesCount = categories.size - maxCategoriesToShow
 
