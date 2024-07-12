@@ -40,6 +40,8 @@ class NoteEditorViewModel : ViewModel() {
     val note : LiveData<Note> = _note
     private val _indexRanges = MutableLiveData<List<IndexRange>>(emptyList())
     val indexRanges: LiveData<List<IndexRange>> = _indexRanges
+    private val _isFormattingBarShow = MutableLiveData(false)
+    val isFormattingBarShow: LiveData<Boolean> = _isFormattingBarShow
 
     fun updateNote(note: Note) = viewModelScope.launch {
         noteRepository.update(note)
@@ -73,5 +75,13 @@ class NoteEditorViewModel : ViewModel() {
             }
         }
         _indexRanges.value = indexRanges
+    }
+
+    fun showFormattingBar() {
+        _isFormattingBarShow.value = true
+    }
+
+    fun hideFormattingBar() {
+        _isFormattingBarShow.value = false
     }
 }

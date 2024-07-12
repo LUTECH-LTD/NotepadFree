@@ -241,6 +241,10 @@ class NoteEditorActivity : AppCompatActivity() {
             }, 500)
             Log.e(Constants.TAG, "tapClick: $tapClick")
         }
+
+        binding.btnCloseFormattingBar.setOnClickListener {
+            noteEditorViewModel.hideFormattingBar()
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -292,6 +296,20 @@ class NoteEditorActivity : AppCompatActivity() {
                 return true
             }
         })
+
+        if(isEditMode) {
+            // Quan sát LiveData sau khi menu đã được tạo
+            noteEditorViewModel.isFormattingBarShow.observe(this) { isShow ->
+                Log.d(Constants.TAG, "observerViewModel: isFormattingBarShow: $isShow")
+                if (isShow) {
+                    binding.toolbar.menu.findItem(R.id.menu_show_formatting_bar).isEnabled = false
+                    binding.formattingBar.visibility = View.VISIBLE
+                } else {
+                    binding.toolbar.menu.findItem(R.id.menu_show_formatting_bar).isEnabled = true
+                    binding.formattingBar.visibility = View.GONE
+                }
+            }
+        }
 
         return super.onCreateOptionsMenu(menu)
     }
@@ -367,7 +385,7 @@ class NoteEditorActivity : AppCompatActivity() {
             }
 
             R.id.menu_show_formatting_bar -> {
-                showToast("Show formatting bar clicked")
+                noteEditorViewModel.showFormattingBar()
                 return true
             }
 
