@@ -34,4 +34,8 @@ class NoteRepository(private val noteDao: NoteDao) {
     fun getNoteById(noteId: Long): Note? {
         return noteDao.getNoteById(noteId)
     }
+
+    suspend fun updateNoteColor(noteId: Long, color: String) {
+        noteDao.updateNoteColor(noteId, color)
+    }
 }

@@ -21,11 +21,11 @@ data class TextStyles(
     val textStylesId: Int? = null,
     val start: Int,
     val end: Int,
-    val isBold: Boolean,
-    val isItalic: Boolean,
-    val isUnderline: Boolean,
-    val isStrikethrough: Boolean,
+    val isBold: Boolean = false,
+    val isItalic: Boolean = false,
+    val isUnderline: Boolean = false,
+    val isStrikethrough: Boolean =false,
     val highlight: String? = null,
     val color: String? = null,
-    val noteId: Int
+    val noteId: Long
 )

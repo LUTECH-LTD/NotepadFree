@@ -19,6 +19,8 @@ interface NoteDao {
 
     @Update
     suspend fun update(note: Note)
+    @Query("UPDATE Note SET color = :color WHERE noteId = :noteId")
+    suspend fun updateNoteColor(noteId: Long, color: String)
 
     @Delete
     suspend fun delete(note: Note)
