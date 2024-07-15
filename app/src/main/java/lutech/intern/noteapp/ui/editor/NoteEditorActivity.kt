@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.print.PrintManager
 import android.text.Spannable
 import android.text.SpannableString
+import android.text.SpannableStringBuilder
 import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
@@ -21,12 +22,15 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
+import android.widget.LinearLayout
 import android.widget.SeekBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.AppCompatImageButton
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
 import androidx.core.view.forEach
@@ -37,6 +41,7 @@ import kotlinx.coroutines.launch
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.adapter.CategorySelectedAdapter
 import lutech.intern.noteapp.constant.Constants
+import lutech.intern.noteapp.data.IndexRange
 import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.data.entity.TextStyles
@@ -56,6 +61,8 @@ class NoteEditorActivity : AppCompatActivity() {
     private var categories: List<Category> = emptyList()
     private val categorySelectedAdapter by lazy { CategorySelectedAdapter() }
     private val currentNoteId by lazy { intent.getLongExtra(Constants.EXTRA_NOTE_ID, 0L) }
+    private var indexRange = 0
+    private var indexRanges: List<IndexRange>?= null
     private var currentNote: Note? = null
     private var isEditorMode = true
     private var isShowFormattingBar = false
@@ -420,6 +427,67 @@ class NoteEditorActivity : AppCompatActivity() {
 
             categorySelectedAdapter.submitList(categories, selectedCategories)
         }
+
+        viewModel.indexRanges.observe(this) { list ->
+            indexRanges = list
+            val menu = binding.toolbar.menu
+            val itemSearchCustom = menu.findItem(R.id.menu_search_custom)
+            val actionView = itemSearchCustom?.actionView
+            val content = binding.contentEditText.text as Spannable
+
+            actionView?.let { view ->
+                if(list.isEmpty()) {
+                    view.findViewById<LinearLayout>(R.id.main).alpha = 0.5F
+                    view.findViewById<AppCompatImageButton>(R.id.btnUp).isEnabled = false
+                    view.findViewById<AppCompatImageButton>(R.id.btnDown).isEnabled = false
+                    view.findViewById<TextView>(R.id.tvCountSearch)?.text = "0/0"
+
+                    viewModel.getNoteWithTextStylesById(currentNoteId)
+                } else {
+                    view.findViewById<LinearLayout>(R.id.main).alpha = 1F
+                    view.findViewById<AppCompatImageButton>(R.id.btnUp).isEnabled = true
+                    view.findViewById<AppCompatImageButton>(R.id.btnDown).isEnabled = true
+                    view.findViewById<TextView>(R.id.tvCountSearch).text = "${indexRange + 1}/${list.size}"
+                    customSpannableContentNote(content, list)
+
+                    // action click
+                    view.findViewById<AppCompatImageButton>(R.id.btnDown).setOnClickListener {
+                        Log.d(Constants.TAG, "btnDown setOnClickListener")
+                        indexRange = if (indexRange == 0) list.size - 1 else indexRange - 1
+                        customSpannableContentNote(content, list)
+                        view.findViewById<TextView>(R.id.tvCountSearch).text = "${indexRange + 1}/${list.size}"
+                    }
+
+                    view.findViewById<AppCompatImageButton>(R.id.btnUp).setOnClickListener {
+                        Log.d(Constants.TAG, "btnUp setOnClickListener")
+                        indexRange = if (indexRange < list.size - 1) indexRange + 1 else 0
+                        customSpannableContentNote(content, list)
+                        view.findViewById<TextView>(R.id.tvCountSearch).text = "${indexRange + 1}/${list.size}"
+                    }
+                }
+            }
+        }
+    }
+
+    private fun customSpannableContentNote(content: Spannable, list: List<IndexRange>) {
+        val spannableString = SpannableStringBuilder(content)
+        for (range in list) {
+            val color = if (list[indexRange] == range) {
+                ContextCompat.getColor(this, R.color.highlight_color2)
+            } else {
+                ContextCompat.getColor(this, R.color.highlight_color)
+            }
+
+            spannableString.setSpan(
+                BackgroundColorSpan(color),
+                range.start,
+                range.end,
+                SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+        }
+
+        binding.contentEditText.text = spannableString
+        binding.tvContent.text = spannableString
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -453,6 +521,9 @@ class NoteEditorActivity : AppCompatActivity() {
 
             override fun onQueryTextChange(newText: String?): Boolean {
                 Log.d(Constants.TAG, "onQueryTextChange")
+                val content = binding.contentEditText.text as Spannable
+                indexRange = 0
+                viewModel.searchContentNote(content, newText ?: "")
                 return true
             }
         })

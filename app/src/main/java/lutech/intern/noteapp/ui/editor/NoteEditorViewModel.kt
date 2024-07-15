@@ -1,5 +1,7 @@
 package lutech.intern.noteapp.ui.editor
 
+import android.text.Spannable
+import android.text.SpannableString
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -67,7 +69,7 @@ class NoteEditorViewModel : ViewModel() {
         _note.value = noteRepository.getNoteById(noteId)
     }
 
-    fun searchContentNote(content: String, query: String) {
+    fun searchContentNote(content: Spannable, query: String) {
         var indexRanges = mutableListOf<IndexRange>()
         if (query.isNotEmpty()) {
             var start = content.indexOf(query, ignoreCase = true)
