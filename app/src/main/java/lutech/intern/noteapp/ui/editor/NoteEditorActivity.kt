@@ -139,6 +139,7 @@ class NoteEditorActivity : AppCompatActivity() {
                         val spanStart = spannable.getSpanStart(span)
                         val spanEnd = spannable.getSpanEnd(span)
                         if (spanStart >= start && spanEnd <= end) {
+                            spannable.removeSpan(span)
                         } else {
                             spannable.removeSpan(span)
                             if (spanStart < start) {
