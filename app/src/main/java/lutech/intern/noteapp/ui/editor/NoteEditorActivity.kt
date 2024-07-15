@@ -7,9 +7,11 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
 import android.print.PrintManager
+import android.text.Editable
 import android.text.Spannable
 import android.text.SpannableString
 import android.text.SpannableStringBuilder
+import android.text.TextWatcher
 import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
@@ -53,6 +55,7 @@ import lutech.intern.noteapp.ui.editor.adapter.PrintNoteAdapter
 import lutech.intern.noteapp.utils.DateTimeUtils
 import lutech.intern.noteapp.utils.DrawableUtils
 import lutech.intern.noteapp.utils.FileManager
+import java.util.Stack
 
 
 class NoteEditorActivity : AppCompatActivity() {
@@ -66,6 +69,7 @@ class NoteEditorActivity : AppCompatActivity() {
     private var currentNote: Note? = null
     private var isEditorMode = true
     private var isShowFormattingBar = false
+    private val contentStack: Stack<SpannableString> = Stack()
 
     private val openDocumentTreeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
@@ -349,6 +353,24 @@ class NoteEditorActivity : AppCompatActivity() {
             }
             false
         }
+
+        binding.contentEditText.addTextChangedListener(object : TextWatcher{
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+                if(contentStack.isNotEmpty()) {
+                    if(s.toString() != contentStack.peek().toString()) {
+                        val currentSpannable = SpannableString(binding.contentEditText.text)
+                        contentStack.push(currentSpannable)
+                    }
+                    binding.toolbar.menu.findItem(R.id.menu_undo).isEnabled = contentStack.size > 1
+                }
+            }
+        })
     }
 
     private fun initObservers() {
@@ -402,6 +424,8 @@ class NoteEditorActivity : AppCompatActivity() {
                 binding.tvTitle.text = binding.titleEditText.text
                 binding.contentEditText.setText(spannable)
                 binding.tvContent.text =  binding.contentEditText.text
+                contentStack.push(spannable)
+
 
                 if (Color.parseColor(note.color) == ContextCompat.getColor(this, R.color.color_beige)) {
                     binding.main.setBackgroundColor(ContextCompat.getColor(this, R.color.color_beige_medium))
@@ -540,7 +564,7 @@ class NoteEditorActivity : AppCompatActivity() {
             }
 
             R.id.menu_undo -> {
-                Log.d(Constants.TAG, "Undo selected")
+                handleUndo()
                 true
             }
 
@@ -707,6 +731,16 @@ class NoteEditorActivity : AppCompatActivity() {
                 Toast.makeText(this@NoteEditorActivity, "Saved", Toast.LENGTH_SHORT).show()
             }
 
+        }
+    }
+
+    private fun handleUndo() {
+        Log.d(Constants.TAG, "handleSaveNote")
+        if (contentStack.size > 1) {
+            contentStack.pop()
+            val previousText = contentStack.peek()
+            binding.contentEditText.setText(previousText)
+            binding.contentEditText.setSelection(previousText.length)
         }
     }
 
