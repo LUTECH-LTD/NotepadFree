@@ -131,11 +131,11 @@
                     android:gravity="center" />
 
                 <CheckBox
+                    android:checked="false"
                     android:id="@+id/cb_font_highlight"
                     android:layout_width="32dp"
                     android:layout_height="32dp"
                     android:layout_marginStart="2dp"
-                    android:background="@color/bgr_checkbox_selection"
                     android:button="@null"
                     android:foreground="@drawable/font_highlight"
                     android:foregroundGravity="center"
@@ -145,8 +145,8 @@
                     android:id="@+id/cb_font_color"
                     android:layout_width="32dp"
                     android:layout_height="32dp"
+                    android:checked="false"
                     android:layout_marginStart="2dp"
-                    android:background="@color/bgr_checkbox_selection"
                     android:button="@null"
                     android:foreground="@drawable/font_color"
                     android:foregroundGravity="center"

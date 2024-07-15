@@ -27,5 +27,6 @@ data class TextStyles(
     val isStrikethrough: Boolean =false,
     val highlight: String? = null,
     val color: String? = null,
+    val textSize: Float = 18F,
     val noteId: Long
 )

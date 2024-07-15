@@ -41,8 +41,7 @@ class NoteEditorViewModel : ViewModel() {
         textStylesRepository = TextStylesRepository(textStylesDao)
     }
 
-    val categoryWithNotes: LiveData<List<CategoryWithNotes>> =
-        categoryRepository.getCategoryWithNotes()
+    val categoryWithNotes: LiveData<List<CategoryWithNotes>> = categoryRepository.getCategoryWithNotes()
     val categories: LiveData<List<Category>> = categoryRepository.getCategories()
     private val _note = MutableLiveData<Note>()
     val note: LiveData<Note> = _note

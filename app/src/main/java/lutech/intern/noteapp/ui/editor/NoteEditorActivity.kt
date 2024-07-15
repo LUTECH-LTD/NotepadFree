@@ -1,5 +1,6 @@
 package lutech.intern.noteapp.ui.editor
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -10,14 +11,19 @@ import android.text.Spannable
 import android.text.SpannableString
 import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
+import android.text.style.RelativeSizeSpan
 import android.text.style.StrikethroughSpan
 import android.text.style.StyleSpan
 import android.text.style.UnderlineSpan
 import android.util.Log
+import android.util.TypedValue
 import android.view.Menu
 import android.view.MenuItem
+import android.view.MotionEvent
 import android.view.View
+import android.widget.SeekBar
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -29,21 +35,40 @@ import com.github.dhaval2404.colorpicker.MaterialColorPickerDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import lutech.intern.noteapp.R
+import lutech.intern.noteapp.adapter.CategorySelectedAdapter
 import lutech.intern.noteapp.constant.Constants
+import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.data.entity.TextStyles
+import lutech.intern.noteapp.data.entity.relations.NoteCategoryCrossRef
 import lutech.intern.noteapp.databinding.ActivityNoteEditorBinding
+import lutech.intern.noteapp.databinding.DialogSelectCategoryBinding
+import lutech.intern.noteapp.databinding.DialogTextSizeBinding
 import lutech.intern.noteapp.ui.editor.adapter.PrintNoteAdapter
 import lutech.intern.noteapp.utils.DateTimeUtils
 import lutech.intern.noteapp.utils.DrawableUtils
+import lutech.intern.noteapp.utils.FileManager
+
 
 class NoteEditorActivity : AppCompatActivity() {
     private val binding by lazy { ActivityNoteEditorBinding.inflate(layoutInflater) }
     private val viewModel: NoteEditorViewModel by viewModels()
+    private var categories: List<Category> = emptyList()
+    private val categorySelectedAdapter by lazy { CategorySelectedAdapter() }
     private val currentNoteId by lazy { intent.getLongExtra(Constants.EXTRA_NOTE_ID, 0L) }
     private var currentNote: Note? = null
     private var isEditorMode = true
     private var isShowFormattingBar = false
+
+    private val openDocumentTreeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                result.data?.data?.let { uri ->
+                    currentNote?.let { note ->
+                        FileManager(this).exportFileToFolder(uri, note.title, note.content)
+                    }
+                }
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,6 +107,7 @@ class NoteEditorActivity : AppCompatActivity() {
         binding.formattingBar.visibility = if (isShowFormattingBar) View.VISIBLE else View.GONE
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun initEvents() {
         Log.d(Constants.TAG, "initEvents")
         binding.layoutReadMode.setOnClickListener {
@@ -92,7 +118,8 @@ class NoteEditorActivity : AppCompatActivity() {
             handleShowFormattingBar()
         }
 
-        binding.cbFontBold.setOnCheckedChangeListener { _, isChecked ->
+        binding.cbFontBold.setOnClickListener {
+            val isChecked = binding.cbFontBold.isChecked
             val spannable = binding.contentEditText.text
             val start = binding.contentEditText.selectionStart
             val end = binding.contentEditText.selectionEnd
@@ -105,7 +132,6 @@ class NoteEditorActivity : AppCompatActivity() {
                         val spanStart = spannable.getSpanStart(span)
                         val spanEnd = spannable.getSpanEnd(span)
                         if (spanStart >= start && spanEnd <= end) {
-                            spannable.removeSpan(span)
                         } else {
                             spannable.removeSpan(span)
                             if (spanStart < start) {
@@ -120,7 +146,8 @@ class NoteEditorActivity : AppCompatActivity() {
             }
         }
 
-        binding.cbFontItalic.setOnCheckedChangeListener { _, isChecked ->
+        binding.cbFontItalic.setOnClickListener {
+            val isChecked = binding.cbFontItalic.isChecked
             val spannable = binding.contentEditText.text
             val start = binding.contentEditText.selectionStart
             val end = binding.contentEditText.selectionEnd
@@ -148,7 +175,8 @@ class NoteEditorActivity : AppCompatActivity() {
             }
         }
 
-        binding.cbFontUnderline.setOnCheckedChangeListener { _, isChecked ->
+        binding.cbFontUnderline.setOnClickListener {
+            val isChecked = binding.cbFontUnderline.isChecked
             val spannable = binding.contentEditText.text
             val start = binding.contentEditText.selectionStart
             val end = binding.contentEditText.selectionEnd
@@ -174,7 +202,8 @@ class NoteEditorActivity : AppCompatActivity() {
             }
         }
 
-        binding.cbFontStrikethrough.setOnCheckedChangeListener { _, isChecked ->
+        binding.cbFontStrikethrough.setOnClickListener {
+            val isChecked = binding.cbFontStrikethrough.isChecked
             val spannable = binding.contentEditText.text
             val start = binding.contentEditText.selectionStart
             val end = binding.contentEditText.selectionEnd
@@ -223,13 +252,95 @@ class NoteEditorActivity : AppCompatActivity() {
                     val spannable = binding.contentEditText.text
                     val start = binding.contentEditText.selectionStart
                     val end = binding.contentEditText.selectionEnd
+
                     if (start != -1 && end != -1) {
-                        spannable?.setSpan(BackgroundColorSpan(Color.parseColor(colorHex)), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        spannable?.setSpan(
+                            BackgroundColorSpan(Color.parseColor(colorHex)),
+                            start,
+                            end,
+                            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                        )
                     }
                 }
                 .show()
         }
 
+        binding.cbFontSize.setOnClickListener {
+            val dialogBinding = DialogTextSizeBinding.inflate(layoutInflater)
+            dialogBinding.btnReset.setOnClickListener {
+                dialogBinding.seekBar.progress = 18
+            }
+
+            dialogBinding.seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                    dialogBinding.tvTextSize.setTextSize(TypedValue.COMPLEX_UNIT_SP, progress.toFloat())
+                    dialogBinding.tvTextSize.text = "Text size $progress"
+                }
+
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                }
+
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                }
+            })
+
+            AlertDialog.Builder(this).apply {
+                setView(dialogBinding.root)
+                setPositiveButton(R.string.ok) { _, _ ->
+                    val spannable = binding.contentEditText.text
+                    val start = binding.contentEditText.selectionStart
+                    val end = binding.contentEditText.selectionEnd
+                    val textSize = dialogBinding.seekBar.progress.toFloat()
+
+                    if (start != -1 && end != -1) {
+                        val spans = spannable?.getSpans(start, end, RelativeSizeSpan::class.java)
+                        if (spans != null) {
+                            for (span in spans) {
+                                spannable.removeSpan(span)
+                            }
+                        }
+
+                        spannable?.setSpan(RelativeSizeSpan(textSize / 18F), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+                }
+                setNegativeButton(R.string.cancel, null)
+            }.create().show()
+        }
+
+        binding.contentEditText.setOnTouchListener { _, event ->
+            Log.d(Constants.TAG, "setOnTouchListener")
+            if (event.action == MotionEvent.ACTION_UP) {
+                binding.contentEditText.post {
+                    val startPosition = binding.contentEditText.selectionStart
+                    val endPosition = binding.contentEditText.selectionEnd
+                    val spannable = binding.contentEditText.text
+
+                    binding.cbFontBold.isChecked = false
+                    binding.cbFontItalic.isChecked = false
+                    binding.cbFontUnderline.isChecked = false
+                    binding.cbFontStrikethrough.isChecked = false
+
+                    val styleSpans = spannable?.getSpans(startPosition, endPosition, StyleSpan::class.java)
+                    styleSpans?.forEach { span ->
+                        when (span.style) {
+                            Typeface.BOLD -> binding.cbFontBold.isChecked = true
+                            Typeface.ITALIC -> binding.cbFontItalic.isChecked = true
+                        }
+                    }
+
+                    val underlineSpans = spannable?.getSpans(startPosition, endPosition, UnderlineSpan::class.java)
+                    if (!underlineSpans.isNullOrEmpty()) {
+                        binding.cbFontUnderline.isChecked = true
+                    }
+
+                    val strikethroughSpans = spannable?.getSpans(startPosition, endPosition, StrikethroughSpan::class.java)
+                    if (!strikethroughSpans.isNullOrEmpty()) {
+                        binding.cbFontStrikethrough.isChecked = true
+                    }
+                }
+            }
+            false
+        }
     }
 
     private fun initObservers() {
@@ -242,6 +353,11 @@ class NoteEditorActivity : AppCompatActivity() {
             currentNote?.let { note ->
                 val spannable = SpannableString(note.content)
                 val listTextStyles = noteWithTextStyles.textStyles
+
+                if(listTextStyles.isNotEmpty()) {
+                    isShowFormattingBar = true
+                    initFormattingBar()
+                }
 
                 listTextStyles.forEach { textStyle ->
                     val start = textStyle.start
@@ -270,12 +386,14 @@ class NoteEditorActivity : AppCompatActivity() {
                     if (textStyle.highlight != null) {
                         spannable.setSpan(BackgroundColorSpan(Color.parseColor(textStyle.highlight)), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
                     }
+
+                    spannable.setSpan(RelativeSizeSpan(textStyle.textSize / 18), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
                 }
 
                 binding.titleEditText.setText(note.title)
                 binding.tvTitle.text = binding.titleEditText.text
                 binding.contentEditText.setText(spannable)
-                binding.tvContent.text = spannable
+                binding.tvContent.text =  binding.contentEditText.text
 
                 if (Color.parseColor(note.color) == ContextCompat.getColor(this, R.color.color_beige)) {
                     binding.main.setBackgroundColor(ContextCompat.getColor(this, R.color.color_beige_medium))
@@ -289,6 +407,18 @@ class NoteEditorActivity : AppCompatActivity() {
                     binding.layoutReadMode.background = DrawableUtils.createSolidDrawable(this, note.color)
                 }
             }
+        }
+
+        viewModel.categoryWithNotes.observe(this) { categoryWithNotes ->
+            Log.d(Constants.TAG, "initObservers: categoryWithNotes")
+            categories = categoryWithNotes.map { it.category }
+            val selectedCategories = categoryWithNotes.filter {
+                it.notes.any { note -> note.noteId == currentNoteId }
+            }.map {
+                it.category
+            }
+
+            categorySelectedAdapter.submitList(categories, selectedCategories)
         }
     }
 
@@ -348,7 +478,7 @@ class NoteEditorActivity : AppCompatActivity() {
             }
 
             R.id.menu_undo_all -> {
-                Log.d(Constants.TAG, "Undo all selected")
+                handleUndoAll()
                 true
             }
 
@@ -363,7 +493,7 @@ class NoteEditorActivity : AppCompatActivity() {
             }
 
             R.id.menu_export -> {
-                Log.d(Constants.TAG, "Export selected")
+                handleExportNote()
                 true
             }
 
@@ -373,7 +503,7 @@ class NoteEditorActivity : AppCompatActivity() {
             }
 
             R.id.menu_categorize -> {
-                Log.d(Constants.TAG, "Categorize selected")
+                handleCategorize()
                 true
             }
 
@@ -429,6 +559,7 @@ class NoteEditorActivity : AppCompatActivity() {
                 val strikethroughSpans = spannable?.getSpans(0, spannable.length, StrikethroughSpan::class.java)
                 val foregroundColorSpans = spannable?.getSpans(0, spannable.length, ForegroundColorSpan::class.java)
                 val backgroundColorSpans = spannable?.getSpans(0, spannable.length, BackgroundColorSpan::class.java)
+                val sizeSpans = spannable?.getSpans(0, spannable.length, RelativeSizeSpan::class.java)
 
                 val underlineSpansMap = underlineSpans?.associate { spannable.getSpanStart(it) to spannable.getSpanEnd(it) } ?: emptyMap()
                 val strikethroughSpansMap = strikethroughSpans?.associate { spannable.getSpanStart(it) to spannable.getSpanEnd(it) } ?: emptyMap()
@@ -441,13 +572,12 @@ class NoteEditorActivity : AppCompatActivity() {
                     val isBold = span.style == Typeface.BOLD
                     val isItalic = span.style == Typeface.ITALIC
                     if (isBold) {
-                        viewModel.insertTextStyles(TextStyles(noteId = newNote.noteId, start = start, end = end, isBold = true)).join()
+                        viewModel.insertTextStyles(TextStyles(noteId = newNote.noteId, start = start, end = end, isBold = true, isItalic = isItalic)).join()
                     }
                     if (isItalic) {
                         viewModel.insertTextStyles(TextStyles(noteId = newNote.noteId, start = start, end = end, isItalic = true)).join()
                     }
                 }
-
 
                 underlineSpans?.forEach { span ->
                     val start = spannable.getSpanStart(span)
@@ -458,7 +588,6 @@ class NoteEditorActivity : AppCompatActivity() {
                         viewModel.insertTextStyles(TextStyles(noteId = newNote.noteId, start = start, end = end, isUnderline = true)).join()
                     }
                 }
-
 
                 strikethroughSpans?.forEach { span ->
                     val start = spannable.getSpanStart(span)
@@ -486,9 +615,21 @@ class NoteEditorActivity : AppCompatActivity() {
                     val backgroundColor = backgroundColorSpansMap[start]?.let { String.format("#%06X", 0xFFFFFF and it) }
 
                     if (!backgroundColor.isNullOrBlank()) {
-                        viewModel.insertTextStyles(TextStyles(noteId = newNote.noteId, start = start, end = end, highlight = backgroundColor)).join()
+                        if(backgroundColor == "#FFFFFF") {
+                            viewModel.insertTextStyles(TextStyles(noteId = newNote.noteId, start = start, end = end, highlight = null)).join()
+                        } else {
+                            viewModel.insertTextStyles(TextStyles(noteId = newNote.noteId, start = start, end = end, highlight = backgroundColor)).join()
+                        }
                     }
                 }
+
+                sizeSpans?.forEach { span ->
+                    val start = spannable.getSpanStart(span)
+                    val end = spannable.getSpanEnd(span)
+                    val textSize = span.sizeChange
+                    viewModel.insertTextStyles(TextStyles(noteId = newNote.noteId, start = start, end = end, textSize = textSize * 18F)).join()
+                }
+
                 viewModel.getNoteWithTextStylesById(currentNoteId)
 
                 Toast.makeText(this@NoteEditorActivity, "Saved", Toast.LENGTH_SHORT).show()
@@ -506,6 +647,14 @@ class NoteEditorActivity : AppCompatActivity() {
                 type = "text/plain"
             }
             startActivity(Intent.createChooser(intent, null))
+        }
+    }
+
+    private fun handleExportNote() {
+        Log.d(Constants.TAG, "handleExportNote")
+        handleSaveNote()
+        Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).also { intent ->
+            openDocumentTreeLauncher.launch(intent)
         }
     }
 
@@ -532,6 +681,21 @@ class NoteEditorActivity : AppCompatActivity() {
         }
     }
 
+    private fun handleUndoAll() {
+        Log.d(Constants.TAG, "handleUndoAll")
+        val builder = AlertDialog.Builder(this).apply {
+            setMessage(getString(R.string.undo_all_message))
+            setPositiveButton(R.string.ok) { _,_ ->
+                viewModel.getNoteWithTextStylesById(currentNoteId)
+            }
+            setNegativeButton(R.string.cancel) { dialog, _ ->
+                dialog.dismiss()
+            }
+        }
+        val dialog = builder.create()
+        dialog.show()
+    }
+
     private fun handleSearchItemSelected() {
         Log.d(Constants.TAG, "handleSearchItemSelected")
         lifecycleScope.launch(Dispatchers.Main) {
@@ -545,6 +709,42 @@ class NoteEditorActivity : AppCompatActivity() {
                     setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
                 }
             }
+        }
+    }
+
+    private fun handleCategorize() {
+        Log.d(Constants.TAG, "handleCategorize")
+        if(categories.isEmpty()) {
+            AlertDialog.Builder(this).apply {
+                setMessage(getString(R.string.categories_empty_message))
+                setPositiveButton(R.string.ok, null)
+            }.create().show()
+        } else {
+            val selectedCategoriesState: MutableMap<Long, Boolean> = mutableMapOf()
+            categorySelectedAdapter.setOnCheckedChange { category, isChecked ->
+                selectedCategoriesState[category.categoryId] = isChecked
+            }
+
+            val dialogBinding = DialogSelectCategoryBinding.inflate(layoutInflater)
+            dialogBinding.categoriesRecyclerView.adapter = categorySelectedAdapter
+            AlertDialog.Builder(this).apply {
+                setView(dialogBinding.root)
+                setPositiveButton(R.string.ok) { _, _ ->
+                    selectedCategoriesState.forEach { (categoryId, isChecked) ->
+                        currentNote?.let { note ->
+                            if (isChecked) {
+                                viewModel.insertNoteCategoryCrossRef(NoteCategoryCrossRef(note.noteId, categoryId))
+                            } else {
+                                viewModel.deleteNoteCategoryCrossRef(note.noteId, categoryId)
+                            }
+                        }
+                    }
+                    Toast.makeText(this@NoteEditorActivity, "Update success", Toast.LENGTH_SHORT).show()
+                }
+                setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
+                    dialog.dismiss()
+                }
+            }.create().show()
         }
     }
 
@@ -564,8 +764,8 @@ class NoteEditorActivity : AppCompatActivity() {
 
     private fun handleSwitchReadMode() {
         Log.d(Constants.TAG, "handleSwitchReadMode")
-        isEditorMode = !isEditorMode
         handleSaveNote()
+        isEditorMode = !isEditorMode
         initLayoutMode()
         invalidateOptionsMenu()
     }
