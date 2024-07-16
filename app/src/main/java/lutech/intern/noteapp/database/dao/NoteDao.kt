@@ -10,6 +10,7 @@ import androidx.room.Transaction
 import androidx.room.Update
 import lutech.intern.noteapp.data.entity.Note
 import lutech.intern.noteapp.data.entity.NoteWithCategories
+import lutech.intern.noteapp.data.entity.NoteWithTextStyles
 
 @Dao
 interface NoteDao {
@@ -18,6 +19,8 @@ interface NoteDao {
 
     @Update
     suspend fun update(note: Note)
+    @Query("UPDATE Note SET color = :color WHERE noteId = :noteId")
+    suspend fun updateNoteColor(noteId: Long, color: String)
 
     @Delete
     suspend fun delete(note: Note)
@@ -31,4 +34,7 @@ interface NoteDao {
 
     @Query("SELECT * FROM Note WHERE noteId = :noteId")
     fun getNoteById(noteId: Long): Note?
+
+    @Query("SELECT * FROM Note WHERE noteId = :noteId")
+    fun getNoteWithTextStylesById(noteId: Long): NoteWithTextStyles?
 }

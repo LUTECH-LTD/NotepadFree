@@ -22,8 +22,8 @@
         app:title="@string/app_name"
         app:titleTextColor="@color/color_white" />
 
-    <LinearLayout
-        android:id="@+id/layoutEdit"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/layoutEditorMode"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_margin="2dp"
@@ -37,27 +37,146 @@
 
         <androidx.appcompat.widget.AppCompatEditText
             android:id="@+id/titleEditText"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="2dp"
+            android:layout_marginEnd="2dp"
             android:hint="@string/enter_title"
             android:maxLines="1"
             android:textColor="@color/color_black_medium"
             android:textColorHint="@color/color_grey_medium"
-            android:textSize="18sp"/>
+            android:textSize="18sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <androidx.appcompat.widget.AppCompatEditText
-            android:id="@+id/textEditText"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:id="@+id/contentEditText"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="2dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginEnd="2dp"
             android:gravity="top"
             android:hint="@string/enter_text"
             android:textColor="@color/color_black_medium"
             android:textColorHint="@color/color_grey_medium"
-            android:textSize="18sp" />
-    </LinearLayout>
+            android:textSize="18sp"
+            app:layout_constraintBottom_toTopOf="@+id/formatting_bar"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/titleEditText" />
+
+        <LinearLayout
+            android:id="@+id/formatting_bar"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="2dp"
+            android:layout_marginBottom="2dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/contentEditText">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+
+                <CheckBox
+                    android:id="@+id/cb_font_bold"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="2dp"
+                    android:background="@color/bgr_checkbox_selection"
+                    android:button="@null"
+                    android:foreground="@drawable/font_bold"
+                    android:foregroundGravity="center"
+                    android:gravity="center" />
+
+                <CheckBox
+                    android:id="@+id/cb_font_italic"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="2dp"
+                    android:background="@color/bgr_checkbox_selection"
+                    android:button="@null"
+                    android:foreground="@drawable/font_italic"
+                    android:foregroundGravity="center"
+                    android:gravity="center" />
+
+                <CheckBox
+                    android:id="@+id/cb_font_underline"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="2dp"
+                    android:background="@color/bgr_checkbox_selection"
+                    android:button="@null"
+                    android:foreground="@drawable/font_underline"
+                    android:foregroundGravity="center"
+                    android:gravity="center" />
+
+                <CheckBox
+                    android:id="@+id/cb_font_strikethrough"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="2dp"
+                    android:background="@color/bgr_checkbox_selection"
+                    android:button="@null"
+                    android:foreground="@drawable/font_strikethrough"
+                    android:foregroundGravity="center"
+                    android:gravity="center" />
+
+                <CheckBox
+                    android:checked="false"
+                    android:id="@+id/cb_font_highlight"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="2dp"
+                    android:button="@null"
+                    android:foreground="@drawable/font_highlight"
+                    android:foregroundGravity="center"
+                    android:gravity="center" />
+
+                <CheckBox
+                    android:id="@+id/cb_font_color"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:checked="false"
+                    android:layout_marginStart="2dp"
+                    android:button="@null"
+                    android:foreground="@drawable/font_color"
+                    android:foregroundGravity="center"
+                    android:gravity="center" />
+
+                <CheckBox
+                    android:id="@+id/cb_font_size"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="2dp"
+                    android:background="@color/bgr_checkbox_selection"
+                    android:button="@null"
+                    android:foreground="@drawable/font_size"
+                    android:foregroundGravity="center"
+                    android:gravity="center" />
+            </LinearLayout>
+
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/btnHideFormattingBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:background="?attr/selectableItemBackground"
+                android:src="@drawable/ic_close" />
+
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <LinearLayout
-        android:id="@+id/layoutRead"
+        android:id="@+id/layoutReadMode"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_margin="2dp"
