@@ -1,19 +1,11 @@
 package lutech.intern.noteapp.ui.editor
 
-import android.app.AlertDialog
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
-import android.os.CancellationSignal
-import android.os.Handler
-import android.os.Looper
-import android.os.ParcelFileDescriptor
-import android.print.PageRange
-import android.print.PrintAttributes
-import android.print.PrintDocumentAdapter
-import android.print.PrintDocumentInfo
 import android.print.PrintManager
 import android.text.Editable
 import android.text.Spannable
@@ -21,61 +13,69 @@ import android.text.SpannableString
 import android.text.SpannableStringBuilder
 import android.text.TextWatcher
 import android.text.style.BackgroundColorSpan
+import android.text.style.ForegroundColorSpan
+import android.text.style.RelativeSizeSpan
+import android.text.style.StrikethroughSpan
+import android.text.style.StyleSpan
+import android.text.style.UnderlineSpan
 import android.util.Log
+import android.util.TypedValue
 import android.view.Menu
 import android.view.MenuItem
+import android.view.MotionEvent
 import android.view.View
 import android.widget.LinearLayout
+import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
+import androidx.core.view.forEach
+import androidx.lifecycle.lifecycleScope
 import com.github.dhaval2404.colorpicker.MaterialColorPickerDialog
-import com.github.dhaval2404.colorpicker.model.ColorShape
-import com.github.dhaval2404.colorpicker.model.ColorSwatch
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import lutech.intern.noteapp.R
 import lutech.intern.noteapp.adapter.CategorySelectedAdapter
 import lutech.intern.noteapp.constant.Constants
 import lutech.intern.noteapp.data.IndexRange
 import lutech.intern.noteapp.data.entity.Category
 import lutech.intern.noteapp.data.entity.Note
+import lutech.intern.noteapp.data.entity.TextStyles
 import lutech.intern.noteapp.data.entity.relations.NoteCategoryCrossRef
 import lutech.intern.noteapp.databinding.ActivityNoteEditorBinding
 import lutech.intern.noteapp.databinding.DialogSelectCategoryBinding
+import lutech.intern.noteapp.databinding.DialogTextSizeBinding
+import lutech.intern.noteapp.ui.editor.adapter.PrintNoteAdapter
 import lutech.intern.noteapp.utils.DateTimeUtils
 import lutech.intern.noteapp.utils.DrawableUtils
 import lutech.intern.noteapp.utils.FileManager
-import java.io.FileOutputStream
-import kotlin.math.log
+import java.util.Stack
+
 
 class NoteEditorActivity : AppCompatActivity() {
     private val binding by lazy { ActivityNoteEditorBinding.inflate(layoutInflater) }
-    private val noteEditorViewModel: NoteEditorViewModel by viewModels()
+    private val viewModel: NoteEditorViewModel by viewModels()
     private var categories: List<Category> = emptyList()
     private val categorySelectedAdapter by lazy { CategorySelectedAdapter() }
-    private var currentNoteId: Long = 0L
-    private var currentNote: Note? = null
-    private val historyContent = ArrayList<String>()
-    private var isEditMode = true
-    private var tapClick = 0
+    private val currentNoteId by lazy { intent.getLongExtra(Constants.EXTRA_NOTE_ID, 0L) }
     private var indexRange = 0
     private var indexRanges: List<IndexRange>?= null
+    private var currentNote: Note? = null
+    private var isEditorMode = true
+    private var isShowFormattingBar = false
+    private val contentStack: Stack<SpannableString> = Stack()
 
-    private val openDocumentTreeLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+    private val openDocumentTreeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
                 result.data?.data?.let { uri ->
-                    currentNote?.let {
-                        FileManager(this).exportFileToFolder(uri, it.title, it.content)
+                    currentNote?.let { note ->
+                        FileManager(this).exportFileToFolder(uri, note.title, note.content)
                     }
                 }
             }
@@ -84,32 +84,335 @@ class NoteEditorActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
-        currentNoteId = intent.getLongExtra(Constants.EXTRA_NOTE_ID, 0L)
+        initViews()
+        initEvents()
+        initObservers()
+    }
+
+    private fun initViews() {
+        Log.d(Constants.TAG, "initViews")
         initToolbar()
-        observeDataViewModel()
-        handleEvent()
+        initLayoutMode()
+        initFormattingBar()
     }
 
     private fun initToolbar() {
+        Log.d(Constants.TAG, "initToolbar")
         setSupportActionBar(binding.toolbar)
-        binding.toolbar.setNavigationOnClickListener {
-            finish()
+        binding.toolbar.setNavigationOnClickListener { finish() }
+    }
+
+    private fun initLayoutMode() {
+        Log.d(Constants.TAG, "initLayoutMode")
+        if (isEditorMode) {
+            binding.layoutEditorMode.visibility = View.VISIBLE
+            binding.layoutReadMode.visibility = View.GONE
+        } else {
+            binding.layoutEditorMode.visibility = View.GONE
+            binding.layoutReadMode.visibility = View.VISIBLE
         }
     }
 
-    private fun observeDataViewModel() {
-        noteEditorViewModel.getNoteById(currentNoteId)
-        noteEditorViewModel.note.observe(this) {
-            currentNote = it
-            currentNote?.let { note ->
-                updateUI(note)
+    private fun initFormattingBar() {
+        Log.d(Constants.TAG, "initFormattingBar")
+        binding.formattingBar.visibility = if (isShowFormattingBar) View.VISIBLE else View.GONE
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun initEvents() {
+        Log.d(Constants.TAG, "initEvents")
+        binding.layoutReadMode.setOnClickListener {
+            handleSwitchReadMode()
+        }
+
+        binding.btnHideFormattingBar.setOnClickListener {
+            handleShowFormattingBar()
+        }
+
+        binding.cbFontBold.setOnClickListener {
+            val isChecked = binding.cbFontBold.isChecked
+            val spannable = binding.contentEditText.text
+            val start = binding.contentEditText.selectionStart
+            val end = binding.contentEditText.selectionEnd
+            if (isChecked) {
+                spannable?.setSpan(StyleSpan(Typeface.BOLD), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            } else {
+                val spans = spannable?.getSpans(start, end, StyleSpan::class.java)
+                spans?.forEach { span ->
+                    if (span.style == Typeface.BOLD) {
+                        val spanStart = spannable.getSpanStart(span)
+                        val spanEnd = spannable.getSpanEnd(span)
+                        if (spanStart >= start && spanEnd <= end) {
+                            spannable.removeSpan(span)
+                        } else {
+                            spannable.removeSpan(span)
+                            if (spanStart < start) {
+                                spannable.setSpan(StyleSpan(span.style), spanStart, start, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                            }
+                            if (spanEnd > end) {
+                                spannable.setSpan(StyleSpan(span.style), end, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        noteEditorViewModel.categoryWithNotes.observe(this) { categoryWithNotes ->
+        binding.cbFontItalic.setOnClickListener {
+            val isChecked = binding.cbFontItalic.isChecked
+            val spannable = binding.contentEditText.text
+            val start = binding.contentEditText.selectionStart
+            val end = binding.contentEditText.selectionEnd
+            if (isChecked) {
+                spannable?.setSpan(StyleSpan(Typeface.ITALIC), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            } else {
+                val spans = spannable?.getSpans(start, end, StyleSpan::class.java)
+                spans?.forEach { span ->
+                    if (span.style == Typeface.ITALIC) {
+                        val spanStart = spannable.getSpanStart(span)
+                        val spanEnd = spannable.getSpanEnd(span)
+                        if (spanStart >= start && spanEnd <= end) {
+                            spannable.removeSpan(span)
+                        } else {
+                            spannable.removeSpan(span)
+                            if (spanStart < start) {
+                                spannable.setSpan(StyleSpan(span.style), spanStart, start, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                            }
+                            if (spanEnd > end) {
+                                spannable.setSpan(StyleSpan(span.style), end, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        binding.cbFontUnderline.setOnClickListener {
+            val isChecked = binding.cbFontUnderline.isChecked
+            val spannable = binding.contentEditText.text
+            val start = binding.contentEditText.selectionStart
+            val end = binding.contentEditText.selectionEnd
+            if (isChecked) {
+                spannable?.setSpan(UnderlineSpan(), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            } else {
+                val spans = spannable?.getSpans(start, end, UnderlineSpan::class.java)
+                spans?.forEach { span ->
+                    val spanStart = spannable.getSpanStart(span)
+                    val spanEnd = spannable.getSpanEnd(span)
+                    if (spanStart >= start && spanEnd <= end) {
+                        spannable.removeSpan(span)
+                    } else {
+                        spannable.removeSpan(span)
+                        if (spanStart < start) {
+                            spannable.setSpan(UnderlineSpan(), spanStart, start, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        }
+                        if (spanEnd > end) {
+                            spannable.setSpan(UnderlineSpan(), end, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        }
+                    }
+                }
+            }
+        }
+
+        binding.cbFontStrikethrough.setOnClickListener {
+            val isChecked = binding.cbFontStrikethrough.isChecked
+            val spannable = binding.contentEditText.text
+            val start = binding.contentEditText.selectionStart
+            val end = binding.contentEditText.selectionEnd
+            if (isChecked) {
+                spannable?.setSpan(StrikethroughSpan(), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            } else {
+                val spans = spannable?.getSpans(start, end, StrikethroughSpan::class.java)
+                spans?.forEach { span ->
+                    val spanStart = spannable.getSpanStart(span)
+                    val spanEnd = spannable.getSpanEnd(span)
+                    if (spanStart >= start && spanEnd <= end) {
+                        spannable.removeSpan(span)
+                    } else {
+                        spannable.removeSpan(span)
+                        if (spanStart < start) {
+                            spannable.setSpan(StrikethroughSpan(), spanStart, start, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        }
+                        if (spanEnd > end) {
+                            spannable.setSpan(StrikethroughSpan(), end, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        }
+                    }
+                }
+            }
+        }
+
+        binding.cbFontColor.setOnClickListener {
+            MaterialColorPickerDialog
+                .Builder(this)
+                .setColors(resources.getStringArray(R.array.themeColorText))
+                .setColorListener { _, colorHex ->
+                    binding.cbFontColor.setBackgroundColor(Color.parseColor(colorHex))
+                    val spannable = binding.contentEditText.text
+                    val start = binding.contentEditText.selectionStart
+                    val end = binding.contentEditText.selectionEnd
+                    if (start != -1 && end != -1) {
+                        spannable?.setSpan(ForegroundColorSpan(Color.parseColor(colorHex)), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+                }
+                .show()
+        }
+
+        binding.cbFontHighlight.setOnClickListener {
+            MaterialColorPickerDialog
+                .Builder(this)
+                .setColors(resources.getStringArray(R.array.themeColorHex))
+                .setColorListener { _, colorHex ->
+                    binding.cbFontHighlight.setBackgroundColor(Color.parseColor(colorHex))
+                    val spannable = binding.contentEditText.text
+                    val start = binding.contentEditText.selectionStart
+                    val end = binding.contentEditText.selectionEnd
+
+                    if (start != -1 && end != -1) {
+                        spannable?.setSpan(
+                            BackgroundColorSpan(Color.parseColor(colorHex)),
+                            start,
+                            end,
+                            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                        )
+                    }
+                }
+                .show()
+        }
+
+        binding.cbFontSize.setOnClickListener {
+            val dialogBinding = DialogTextSizeBinding.inflate(layoutInflater)
+            dialogBinding.btnReset.setOnClickListener {
+                dialogBinding.seekBar.progress = 18
+            }
+
+            dialogBinding.seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                    dialogBinding.tvTextSize.setTextSize(TypedValue.COMPLEX_UNIT_SP, progress.toFloat())
+                    dialogBinding.tvTextSize.text = "Text size $progress"
+                }
+
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                }
+
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                }
+            })
+
+            AlertDialog.Builder(this).apply {
+                setView(dialogBinding.root)
+                setPositiveButton(R.string.ok) { _, _ ->
+                    val spannable = binding.contentEditText.text
+                    val start = binding.contentEditText.selectionStart
+                    val end = binding.contentEditText.selectionEnd
+                    val textSize = dialogBinding.seekBar.progress.toFloat()
+
+                    if (start != -1 && end != -1) {
+                        val spans = spannable?.getSpans(start, end, RelativeSizeSpan::class.java)
+                        if (spans != null) {
+                            for (span in spans) {
+                                spannable.removeSpan(span)
+                            }
+                        }
+
+                        spannable?.setSpan(RelativeSizeSpan(textSize / 18F), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+                }
+                setNegativeButton(R.string.cancel, null)
+            }.create().show()
+        }
+
+        binding.contentEditText.addTextChangedListener(object : TextWatcher{
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+                if(contentStack.isNotEmpty()) {
+                    if(s.toString() != contentStack.peek().toString()) {
+                        val currentSpannable = SpannableString(binding.contentEditText.text)
+                        contentStack.push(currentSpannable)
+                    }
+                    binding.toolbar.menu?.findItem(R.id.menu_undo)?.isEnabled = contentStack.size > 1
+                }
+            }
+        })
+    }
+
+    private fun initObservers() {
+        Log.d(Constants.TAG, "initObservers")
+        viewModel.getNoteWithTextStylesById(currentNoteId)
+        viewModel.noteWithTextStyles.observe(this) { noteWithTextStyles ->
+            Log.d(Constants.TAG, "initObservers: noteWithTextStyles")
+            currentNote = noteWithTextStyles.note
+
+            currentNote?.let { note ->
+                val spannable = SpannableString(note.content)
+                val listTextStyles = noteWithTextStyles.textStyles
+
+                if(listTextStyles.isNotEmpty()) {
+                    isShowFormattingBar = true
+                    initFormattingBar()
+                }
+
+                listTextStyles.forEach { textStyle ->
+                    val start = textStyle.start
+                    val end = textStyle.end
+
+                    if (textStyle.isBold) {
+                        spannable.setSpan(StyleSpan(Typeface.BOLD), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+
+                    if (textStyle.isItalic) {
+                        spannable.setSpan(StyleSpan(Typeface.ITALIC), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+
+                    if (textStyle.isUnderline) {
+                        spannable.setSpan(UnderlineSpan(), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+
+                    if (textStyle.isStrikethrough) {
+                        spannable.setSpan(StrikethroughSpan(), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+
+                    if (textStyle.color != null) {
+                        spannable.setSpan(ForegroundColorSpan(Color.parseColor(textStyle.color)), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+
+                    if (textStyle.highlight != null) {
+                        spannable.setSpan(BackgroundColorSpan(Color.parseColor(textStyle.highlight)), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+
+                    spannable.setSpan(RelativeSizeSpan(textStyle.textSize / 18), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+
+                binding.titleEditText.setText(note.title)
+                binding.tvTitle.text = binding.titleEditText.text
+                binding.contentEditText.setText(spannable)
+                binding.tvContent.text =  binding.contentEditText.text
+                contentStack.push(spannable)
+
+
+                if (Color.parseColor(note.color) == ContextCompat.getColor(this, R.color.color_beige)) {
+                    binding.main.setBackgroundColor(ContextCompat.getColor(this, R.color.color_beige_medium))
+                    binding.toolbar.setBackgroundColor(ContextCompat.getColor(this, R.color.color_brown))
+                    binding.layoutEditorMode.setBackgroundResource(R.drawable.bg_beige_radius)
+                    binding.layoutReadMode.setBackgroundResource(R.drawable.bg_beige_radius)
+                } else {
+                    binding.main.setBackgroundColor(DrawableUtils.darkenColor(Color.parseColor(note.color), 0.5f))
+                    binding.toolbar.setBackgroundColor(DrawableUtils.darkenColor(Color.parseColor(note.color), 0.5f))
+                    binding.layoutEditorMode.background = DrawableUtils.createSolidDrawable(this, note.color)
+                    binding.layoutReadMode.background = DrawableUtils.createSolidDrawable(this, note.color)
+                }
+            }
+        }
+
+        viewModel.categoryWithNotes.observe(this) { categoryWithNotes ->
+            Log.d(Constants.TAG, "initObservers: categoryWithNotes")
             categories = categoryWithNotes.map { it.category }
             val selectedCategories = categoryWithNotes.filter {
-                it.notes.any { note -> note.noteId == currentNote!!.noteId }
+                it.notes.any { note -> note.noteId == currentNoteId }
             }.map {
                 it.category
             }
@@ -117,13 +420,12 @@ class NoteEditorActivity : AppCompatActivity() {
             categorySelectedAdapter.submitList(categories, selectedCategories)
         }
 
-        noteEditorViewModel.indexRanges.observe(this) { list ->
-            Log.d(Constants.TAG, "observeDataViewModel: $list")
+        viewModel.indexRanges.observe(this) { list ->
             indexRanges = list
             val menu = binding.toolbar.menu
             val itemSearchCustom = menu.findItem(R.id.menu_search_custom)
             val actionView = itemSearchCustom?.actionView
-            val content = binding.textEditText.text.toString().trim()
+            val content = binding.contentEditText.text as Spannable
 
             actionView?.let { view ->
                 if(list.isEmpty()) {
@@ -132,8 +434,7 @@ class NoteEditorActivity : AppCompatActivity() {
                     view.findViewById<AppCompatImageButton>(R.id.btnDown).isEnabled = false
                     view.findViewById<TextView>(R.id.tvCountSearch)?.text = "0/0"
 
-                    binding.textEditText.setText(content)
-                    binding.tvContent.text = content
+                    viewModel.getNoteWithTextStylesById(currentNoteId)
                 } else {
                     view.findViewById<LinearLayout>(R.id.main).alpha = 1F
                     view.findViewById<AppCompatImageButton>(R.id.btnUp).isEnabled = true
@@ -160,7 +461,7 @@ class NoteEditorActivity : AppCompatActivity() {
         }
     }
 
-    private fun customSpannableContentNote(content: String, list: List<IndexRange>) {
+    private fun customSpannableContentNote(content: Spannable, list: List<IndexRange>) {
         val spannableString = SpannableStringBuilder(content)
         for (range in list) {
             val color = if (list[indexRange] == range) {
@@ -177,302 +478,320 @@ class NoteEditorActivity : AppCompatActivity() {
             )
         }
 
-        binding.textEditText.text = spannableString
+        binding.contentEditText.text = spannableString
         binding.tvContent.text = spannableString
     }
 
-    private fun updateUI(note: Note) {
-        binding.titleEditText.setText(note.title)
-        binding.textEditText.setText(note.content)
-        binding.tvTitle.text = binding.titleEditText.text.toString()
-        binding.tvContent.text = binding.textEditText.text.toString()
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        Log.d(Constants.TAG, "onCreateOptionsMenu")
+        val menuRes = if (isEditorMode) R.menu.menu_editor_mode else R.menu.menu_read_mode
+        menuInflater.inflate(menuRes, menu)
 
-        if (Color.parseColor(note.color) == ContextCompat.getColor(this, R.color.color_beige)) {
-            binding.main.setBackgroundColor(ContextCompat.getColor(this, R.color.color_beige_medium))
-            binding.toolbar.setBackgroundColor(ContextCompat.getColor(this, R.color.color_brown))
-            binding.layoutEdit.setBackgroundResource(R.drawable.bg_beige_radius)
-            binding.layoutRead.setBackgroundResource(R.drawable.bg_beige_radius)
-        } else {
-            binding.main.setBackgroundColor(DrawableUtils.darkenColor(Color.parseColor(note.color), 0.5f))
-            binding.toolbar.setBackgroundColor(DrawableUtils.darkenColor(Color.parseColor(note.color), 0.5f))
-            binding.layoutEdit.background = DrawableUtils.createSolidDrawable(this, note.color)
-            binding.layoutRead.background = DrawableUtils.createSolidDrawable(this, note.color)
-        }
+        val menuShowFormattingBar = menu?.findItem(R.id.menu_show_formatting_bar)
+        menuShowFormattingBar?.isEnabled = !isShowFormattingBar
 
-        if (!historyContent.contains(note.content)) {
-            historyContent.add(note.content)
-            invalidateOptionsMenu()
-        }
-
-        indexRanges?.let {
-            customSpannableContentNote(note.content, it)
-        }
-    }
-
-    private fun handleEvent() {
-        binding.textEditText.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, p1: Int, p2: Int, p3: Int) {
+        val menuSearch = menu?.findItem(R.id.menu_search)
+        menuSearch?.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
+            override fun onMenuItemActionExpand(item: MenuItem): Boolean {
+                Log.d(Constants.TAG, "onMenuItemActionExpand")
+                return true
             }
 
-            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-
+            override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
+                Log.d(Constants.TAG, "onMenuItemActionCollapse")
+                invalidateOptionsMenu()
+                return true
             }
 
-            override fun afterTextChanged(s: Editable?) {
-                s?.let {
-                    if (historyContent.contains(it.toString())) return
-                    historyContent.add(it.toString())
-                    invalidateOptionsMenu()
-                }
-            }
         })
 
-        binding.layoutRead.setOnClickListener {
-            tapClick++
-            Handler(Looper.getMainLooper()).postDelayed({
-                when (tapClick) {
-                    1 -> showToast("Tap twice to edit")
-                    2 -> {
-                        isEditMode = true
-                        invalidateOptionsMenu()
-                    }
-                }
-                tapClick = 0
-            }, 500)
-            Log.e(Constants.TAG, "tapClick: $tapClick")
-        }
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        Log.d(Constants.TAG, "onCreateOptionsMenu:")
-        menuInflater.inflate(if (isEditMode) R.menu.menu_option_editor_note else R.menu.menu_read_mode_editor, menu)
-
-        if (!isEditMode) {
-            binding.layoutEdit.visibility = View.GONE
-            binding.layoutRead.visibility = View.VISIBLE
-        } else {
-            binding.layoutEdit.visibility = View.VISIBLE
-            binding.layoutRead.visibility = View.GONE
-            binding.textEditText.requestFocus()
-            // Undo - Undo all update menu
-            if (historyContent.size <= 1) {
-                binding.toolbar.menu.findItem(R.id.menu_undo).isEnabled = false
-                binding.toolbar.menu.findItem(R.id.menu_undo_all).isEnabled = false
-            } else {
-                binding.toolbar.menu.findItem(R.id.menu_undo).isEnabled = true
-                binding.toolbar.menu.findItem(R.id.menu_undo_all).isEnabled = true
-            }
-        }
-
-        // Search event
-        val searchItem = menu?.findItem(R.id.menu_search)
-        val searchView = searchItem?.actionView as? SearchView
-
-        searchView?.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+        val searchView = menuSearch?.actionView as SearchView
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 return true
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                val content = binding.textEditText.text.toString().trim()
-                val query = newText ?: ""
+                Log.d(Constants.TAG, "onQueryTextChange")
+                val content = binding.contentEditText.text as Spannable
                 indexRange = 0
-                noteEditorViewModel.searchContentNote(content, query)
+                viewModel.searchContentNote(content, newText ?: "")
                 return true
             }
         })
-
-        searchItem?.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
-            override fun onMenuItemActionExpand(item: MenuItem): Boolean {
-                return true
-            }
-
-            override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
-                invalidateOptionsMenu()
-                return true
-            }
-        })
-
-        return super.onCreateOptionsMenu(menu)
+        return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        Log.d(Constants.TAG, "onOptionsItemSelected")
         return when (item.itemId) {
             R.id.menu_save -> {
-                updateNote()
+                handleSaveNote()
                 true
             }
 
             R.id.menu_undo -> {
-                undoNote()
+                handleUndo()
                 true
             }
 
             R.id.menu_redo -> {
-                showToast("Redo clicked")
+                Log.d(Constants.TAG, "Redo selected")
                 true
             }
 
             R.id.menu_undo_all -> {
-                undoAllNote()
+                handleUndoAll()
                 true
             }
 
             R.id.menu_search -> {
-                GlobalScope.launch {
-                    val menu = binding.toolbar.menu
-                    for (i in 0 until menu.size()) {
-                        menu.getItem(i).setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
-                    }
-                    binding.toolbar.menu.findItem(R.id.menu_search_custom).isVisible = true
-                    binding.toolbar.menu.findItem(R.id.menu_search_custom).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
-                }
+                handleSearchItemSelected()
                 true
             }
 
             R.id.menu_share -> {
-                shareNote()
+                handleShareNote()
                 true
             }
 
             R.id.menu_export -> {
-                exportNote()
-                return true
+                handleExportNote()
+                true
             }
 
             R.id.menu_delete -> {
-                deleteNote()
-                return true
+                handleDeleteNote()
+                true
             }
 
             R.id.menu_categorize -> {
-                updateCategoryNote()
-                return true
+                handleCategorize()
+                true
             }
 
             R.id.menu_colorize -> {
-                updateColorNote()
-                return true
+                handleColorize()
+                true
             }
 
             R.id.menu_switch_mode -> {
-                isEditMode = !isEditMode
-                invalidateOptionsMenu()
-                return true
+                handleSwitchReadMode()
+                true
             }
 
             R.id.menu_print -> {
-                printDocument("")
-                return true
+                handlePrint()
+                true
             }
 
             R.id.menu_show_formatting_bar -> {
-                showToast("Show formatting bar clicked")
-                return true
+                handleShowFormattingBar()
+                true
             }
 
             R.id.menu_show_info -> {
-                showInfoNote()
-                return true
+                handleShowInfo()
+                true
             }
 
             else -> super.onOptionsItemSelected(item)
         }
     }
 
-    private fun updateNote() {
+    private fun handleSaveNote() {
+        Log.d(Constants.TAG, "handleSaveNote")
         val title = binding.titleEditText.text.toString().trim()
-        val content = binding.textEditText.text.toString().trim()
-        currentNote?.let {
-            val note = Note(
-                noteId = it.noteId,
+        val content = binding.contentEditText.text.toString().trim()
+        currentNote?.let {note ->
+            val newNote = Note(
+                noteId = note.noteId,
                 title = title,
                 content = content,
-                color = it.color,
-                dateCreate = it.dateCreate
+                color = note.color,
+                dateCreate = note.dateCreate
             )
-            noteEditorViewModel.updateNote(note)
-        }
-    }
 
-    private fun undoNote() {
-        if (historyContent.size > 1) {
-            historyContent.removeAt(historyContent.size - 1)
-            val lastVersion = historyContent.last()
-            binding.textEditText.setText(lastVersion)
-            binding.textEditText.setSelection(lastVersion.length)
-        }
-        invalidateOptionsMenu()
-    }
+            lifecycleScope.launch {
+                viewModel.updateNote(newNote).join()
+                viewModel.deleteTextStylesByNoteId(newNote.noteId).join()
 
-    private fun undoAllNote() {
-        val builder = AlertDialog.Builder(this)
-        builder.apply {
-            setMessage("Remove all of the note changes made since the last opening of the note?")
-            setPositiveButton("Undo All") { _, _ ->
-                binding.textEditText.setText(historyContent.first())
-                binding.textEditText.setSelection(historyContent.first().length)
-                historyContent.clear()
-                historyContent.add(binding.textEditText.text.toString())
-                invalidateOptionsMenu()
+                val spannable = binding.contentEditText.text
+                val styleSpans = spannable?.getSpans(0, spannable.length, StyleSpan::class.java)
+                val underlineSpans = spannable?.getSpans(0, spannable.length, UnderlineSpan::class.java)
+                val strikethroughSpans = spannable?.getSpans(0, spannable.length, StrikethroughSpan::class.java)
+                val foregroundColorSpans = spannable?.getSpans(0, spannable.length, ForegroundColorSpan::class.java)
+                val backgroundColorSpans = spannable?.getSpans(0, spannable.length, BackgroundColorSpan::class.java)
+                val sizeSpans = spannable?.getSpans(0, spannable.length, RelativeSizeSpan::class.java)
+
+                val underlineSpansMap = underlineSpans?.associate { spannable.getSpanStart(it) to spannable.getSpanEnd(it) } ?: emptyMap()
+                val strikethroughSpansMap = strikethroughSpans?.associate { spannable.getSpanStart(it) to spannable.getSpanEnd(it) } ?: emptyMap()
+                val foregroundColorSpansMap = foregroundColorSpans?.associate { spannable.getSpanStart(it) to it.foregroundColor } ?: emptyMap()
+                val backgroundColorSpansMap = backgroundColorSpans?.associate { spannable.getSpanStart(it) to it.backgroundColor } ?: emptyMap()
+
+                styleSpans?.forEach { span ->
+                    val start = spannable.getSpanStart(span)
+                    val end = spannable.getSpanEnd(span)
+                    val isBold = span.style == Typeface.BOLD
+                    val isItalic = span.style == Typeface.ITALIC
+                    if (isBold) {
+                        viewModel.insertTextStyles(TextStyles(noteId = newNote.noteId, start = start, end = end, isBold = true, isItalic = isItalic)).join()
+                    }
+                    if (isItalic) {
+                        viewModel.insertTextStyles(TextStyles(noteId = newNote.noteId, start = start, end = end, isItalic = true)).join()
+                    }
+                }
+
+                underlineSpans?.forEach { span ->
+                    val start = spannable.getSpanStart(span)
+                    val end = spannable.getSpanEnd(span)
+                    val isUnderline = underlineSpansMap.any { it.key >= start && it.value <= end }
+
+                    if (isUnderline) {
+                        viewModel.insertTextStyles(TextStyles(noteId = newNote.noteId, start = start, end = end, isUnderline = true)).join()
+                    }
+                }
+
+                strikethroughSpans?.forEach { span ->
+                    val start = spannable.getSpanStart(span)
+                    val end = spannable.getSpanEnd(span)
+                    val isStrikethrough = strikethroughSpansMap.any { it.key >= start && it.value <= end }
+
+                    if (isStrikethrough) {
+                        viewModel.insertTextStyles(TextStyles(noteId = newNote.noteId, start = start, end = end, isStrikethrough = true)).join()
+                    }
+                }
+
+                foregroundColorSpans?.forEach { span ->
+                    val start = spannable.getSpanStart(span)
+                    val end = spannable.getSpanEnd(span)
+                    val textColor = foregroundColorSpansMap[start]?.let { String.format("#%06X", 0xFFFFFF and it) }
+
+                    if (!textColor.isNullOrBlank()) {
+                        viewModel.insertTextStyles(TextStyles(noteId = newNote.noteId, start = start, end = end, color = textColor)).join()
+                    }
+                }
+
+                backgroundColorSpans?.forEach { span ->
+                    val start = spannable.getSpanStart(span)
+                    val end = spannable.getSpanEnd(span)
+                    val backgroundColor = backgroundColorSpansMap[start]?.let { String.format("#%06X", 0xFFFFFF and it) }
+
+                    if (!backgroundColor.isNullOrBlank()) {
+                        if(backgroundColor == "#FFFFFF") {
+                            viewModel.insertTextStyles(TextStyles(noteId = newNote.noteId, start = start, end = end, highlight = null)).join()
+                        } else {
+                            viewModel.insertTextStyles(TextStyles(noteId = newNote.noteId, start = start, end = end, highlight = backgroundColor)).join()
+                        }
+                    }
+                }
+
+                sizeSpans?.forEach { span ->
+                    val start = spannable.getSpanStart(span)
+                    val end = spannable.getSpanEnd(span)
+                    val textSize = span.sizeChange
+                    viewModel.insertTextStyles(TextStyles(noteId = newNote.noteId, start = start, end = end, textSize = textSize * 18F)).join()
+                }
+
+                viewModel.getNoteWithTextStylesById(currentNoteId)
+
+                Toast.makeText(this@NoteEditorActivity, "Saved", Toast.LENGTH_SHORT).show()
             }
-            setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
+
+        }
+    }
+
+    private fun handleUndo() {
+        Log.d(Constants.TAG, "handleSaveNote")
+        if (contentStack.size > 1) {
+            contentStack.pop()
+            val previousText = contentStack.peek()
+            binding.contentEditText.setText(previousText)
+            binding.contentEditText.setSelection(previousText.length)
+        }
+    }
+
+    private fun handleShareNote() {
+        Log.d(Constants.TAG, "handleShareNote")
+        handleSaveNote()
+        currentNote?.let { note ->
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                putExtra(Intent.EXTRA_TEXT, note.content)
+                type = "text/plain"
+            }
+            startActivity(Intent.createChooser(intent, null))
+        }
+    }
+
+    private fun handleExportNote() {
+        Log.d(Constants.TAG, "handleExportNote")
+        handleSaveNote()
+        Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).also { intent ->
+            openDocumentTreeLauncher.launch(intent)
+        }
+    }
+
+    private fun handleDeleteNote() {
+        Log.d(Constants.TAG, "handleDeleteNote")
+        currentNote?.let { note ->
+            val message = note.title.ifEmpty {
+                note.content.ifEmpty {
+                    getString(R.string.untitled)
+                }
+            }
+            val builder = AlertDialog.Builder(this).apply {
+                setMessage(getString(R.string.delete_note_message, message))
+                setPositiveButton(R.string.ok) { _,_ ->
+                    viewModel.deleteNote(note)
+                    finish()
+                }
+                setNegativeButton(R.string.cancel) { dialog, _ ->
+                    dialog.dismiss()
+                }
+            }
+            val dialog = builder.create()
+            dialog.show()
+        }
+    }
+
+    private fun handleUndoAll() {
+        Log.d(Constants.TAG, "handleUndoAll")
+        val builder = AlertDialog.Builder(this).apply {
+            setMessage(getString(R.string.undo_all_message))
+            setPositiveButton(R.string.ok) { _,_ ->
+                viewModel.getNoteWithTextStylesById(currentNoteId)
+            }
+            setNegativeButton(R.string.cancel) { dialog, _ ->
                 dialog.dismiss()
             }
         }
-
         val dialog = builder.create()
         dialog.show()
     }
 
-    private fun shareNote() {
-        currentNote?.let {
-            val sendIntent: Intent = Intent().apply {
-                action = Intent.ACTION_SEND
-                putExtra(Intent.EXTRA_TEXT, it.content)
-                type = "text/plain"
-            }
+    private fun handleSearchItemSelected() {
+        Log.d(Constants.TAG, "handleSearchItemSelected")
+        lifecycleScope.launch(Dispatchers.Main) {
+            binding.toolbar.menu?.let { menu ->
+                menu.forEach { menuItem ->
+                    menuItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
+                }
 
-            val shareIntent = Intent.createChooser(sendIntent, null)
-            startActivity(shareIntent)
+                menu.findItem(R.id.menu_search_custom).apply {
+                    isVisible = true
+                    setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+                }
+            }
         }
     }
 
-    private fun exportNote() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-        openDocumentTreeLauncher.launch(intent)
-    }
-
-    private fun deleteNote() {
-        currentNote?.let {
-            val builder = AlertDialog.Builder(this)
-            builder.apply {
-                setMessage("The '${it.title}' note will be deleted\nAre you sure")
-                setPositiveButton(R.string.ok) { _, _ ->
-                    noteEditorViewModel.deleteNote(it)
-                    finish()
-                }
-                setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
-                    dialog.dismiss()
-                }
-            }
-
-            val dialog = builder.create()
-            dialog.show()
-        }
-    }
-
-    private fun updateCategoryNote() {
-        if (categories.isEmpty()) {
-            val builder = AlertDialog.Builder(this)
-            builder.apply {
-                setMessage("Categories can be added in the app's menu. To open the menu use menu in the top left corner off the note list screen.")
-                setPositiveButton(R.string.ok) { _, _ ->
-                }
-            }
-
-            val dialog = builder.create()
-            dialog.show()
+    private fun handleCategorize() {
+        Log.d(Constants.TAG, "handleCategorize")
+        if(categories.isEmpty()) {
+            AlertDialog.Builder(this).apply {
+                setMessage(getString(R.string.categories_empty_message))
+                setPositiveButton(R.string.ok, null)
+            }.create().show()
         } else {
             val selectedCategoriesState: MutableMap<Long, Boolean> = mutableMapOf()
             categorySelectedAdapter.setOnCheckedChange { category, isChecked ->
@@ -481,127 +800,85 @@ class NoteEditorActivity : AppCompatActivity() {
 
             val dialogBinding = DialogSelectCategoryBinding.inflate(layoutInflater)
             dialogBinding.categoriesRecyclerView.adapter = categorySelectedAdapter
-            val builder = AlertDialog.Builder(this)
-            builder.apply {
+            AlertDialog.Builder(this).apply {
                 setView(dialogBinding.root)
                 setPositiveButton(R.string.ok) { _, _ ->
-                    // Handel event
                     selectedCategoriesState.forEach { (categoryId, isChecked) ->
-                        currentNote?.let {
+                        currentNote?.let { note ->
                             if (isChecked) {
-                                noteEditorViewModel.insertNoteCategoryCrossRef(
-                                    NoteCategoryCrossRef(
-                                        it.noteId,
-                                        categoryId
-                                    )
-                                )
+                                viewModel.insertNoteCategoryCrossRef(NoteCategoryCrossRef(note.noteId, categoryId))
                             } else {
-                                noteEditorViewModel.deleteNoteCategoryCrossRef(
-                                    it.noteId,
-                                    categoryId
-                                )
+                                viewModel.deleteNoteCategoryCrossRef(note.noteId, categoryId)
                             }
                         }
                     }
-                    Toast.makeText(this@NoteEditorActivity, "Update success", Toast.LENGTH_SHORT)
-                        .show()
+                    Toast.makeText(this@NoteEditorActivity, "Update success", Toast.LENGTH_SHORT).show()
                 }
                 setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
-                    dialog.dismiss()
-                }
-            }
-
-            val dialog = builder.create()
-            dialog.show()
-        }
-    }
-
-    private fun updateColorNote() {
-        currentNote?.let {
-            MaterialColorPickerDialog
-                .Builder(this)
-                .setColorShape(ColorShape.SQAURE)
-                .setColorSwatch(ColorSwatch._200)
-                .setColors(resources.getStringArray(R.array.themeColorHex))
-                .setDefaultColor(it.color)
-                .setColorListener { _, colorHex ->
-                    val note = Note(
-                        noteId = it.noteId,
-                        title = it.title,
-                        content = it.content,
-                        color = colorHex,
-                        dateCreate = it.dateCreate
-                    )
-                    noteEditorViewModel.updateNote(note)
-                }
-                .show()
-        }
-    }
-
-    private fun printDocument(textToPrint: String) {
-        val printManager = getSystemService(Context.PRINT_SERVICE) as PrintManager
-
-        val printAdapter = object : PrintDocumentAdapter() {
-            override fun onLayout(
-                attributes: PrintAttributes?,
-                oldAttributes: PrintAttributes?,
-                cancellationSignal: CancellationSignal?,
-                callback: LayoutResultCallback?,
-                extras: Bundle?,
-            ) {
-                if (cancellationSignal?.isCanceled == true) {
-                    callback?.onLayoutCancelled()
-                    return
-                }
-
-                val builder = PrintDocumentInfo.Builder("file_name")
-                builder.setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
-                    .setPageCount(1)
-                    .build()
-
-                callback?.onLayoutFinished(builder.build(), true)
-            }
-
-            override fun onWrite(
-                pages: Array<out PageRange>?,
-                destination: ParcelFileDescriptor?,
-                cancellationSignal: CancellationSignal?,
-                callback: WriteResultCallback?,
-            ) {
-                val input = textToPrint.toByteArray().inputStream()
-                val output = FileOutputStream(destination?.fileDescriptor)
-                input.copyTo(output)
-            }
-        }
-
-        val printJob = printManager.print("JobName", printAdapter, null)
-    }
-
-    private fun showInfoNote() {
-        currentNote?.let { note ->
-            val wordCount = note.content.trim().split("\\s+".toRegex()).size
-            val nonSpaceCharCount = note.content.replace(" ", "").length
-            val lineCount = note.content.split("\n").size
-
-            val message = """
-                                    Words: $wordCount
-                                    Wrapped lines: $lineCount
-                                    Characters: ${note.content.length}
-                                    Characters without whitespaces: $nonSpaceCharCount
-                                    Created at: ${DateTimeUtils.getFormattedDateTime(note.dateCreate)}
-                                    Last saved at: ${DateTimeUtils.getFormattedDateTime(note.lastUpdate)}
-                                """.trimIndent()
-
-            AlertDialog.Builder(this).apply {
-                setMessage(message)
-                setPositiveButton(R.string.ok) { dialog, _ ->
                     dialog.dismiss()
                 }
             }.create().show()
         }
     }
 
-    private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    private fun handleColorize() {
+        Log.d(Constants.TAG, "handleColorize")
+        currentNote?.let { note ->
+            MaterialColorPickerDialog
+                .Builder(this)
+                .setColors(resources.getStringArray(R.array.themeColorHex))
+                .setDefaultColor(note.color)
+                .setColorListener { _, colorHex ->
+                    viewModel.updateNoteColor(note.noteId, colorHex)
+                }
+                .show()
+        }
+    }
+
+    private fun handleSwitchReadMode() {
+        Log.d(Constants.TAG, "handleSwitchReadMode")
+        handleSaveNote()
+        isEditorMode = !isEditorMode
+        initLayoutMode()
+        invalidateOptionsMenu()
+    }
+
+    private fun handlePrint() {
+        Log.d(Constants.TAG, "handlePrint")
+        val printManager = this.getSystemService(Context.PRINT_SERVICE) as PrintManager
+        printManager.print(getString(R.string.job_name), PrintNoteAdapter(this), null)
+    }
+
+    private fun handleShowFormattingBar() {
+        Log.d(Constants.TAG, "handleShowFormattingBar")
+        isShowFormattingBar = !isShowFormattingBar
+        val menuShowFormattingBar = binding.toolbar.menu.findItem(R.id.menu_show_formatting_bar)
+        menuShowFormattingBar?.isEnabled = !isShowFormattingBar
+        initFormattingBar()
+    }
+
+    private fun handleShowInfo() {
+        Log.d(Constants.TAG, "handleShowInfo")
+        val content = binding.contentEditText.text.toString()
+        val words = content.split("\\s+".toRegex()).filter { it.isNotBlank() }.size
+        val lines = content.split("\n").size
+        val characters = content.trim().replace("\n", "").length
+        val charactersWithoutSpaces = content.trim().replace("\\s".toRegex(), "").length
+        val createdAt = currentNote?.let { DateTimeUtils.getFormattedDateTime(it.dateCreate) }
+        val updatedAt = currentNote?.let { DateTimeUtils.getFormattedDateTime(it.lastUpdate) }
+
+        val message = """
+                    Words: $words
+                    Wrapped lines: $lines
+                    Characters: $characters
+                    Characters without whitespaces: $charactersWithoutSpaces
+                    Created at: $createdAt
+                    Updated at: $updatedAt
+                """.trimIndent()
+
+        AlertDialog.Builder(this).apply {
+            setMessage(message)
+            setPositiveButton(R.string.ok, null)
+        }.create().show()
     }
 }

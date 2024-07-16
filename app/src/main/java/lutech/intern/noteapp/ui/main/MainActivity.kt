@@ -12,7 +12,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.ActionMode
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.GravityCompat
+import androidx.core.view.forEach
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -89,6 +91,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.menu_backup -> {
                     val intent = Intent(this, BackupActivity::class.java)
                     startActivity(intent)
+                    startActivity(Intent(this, BackupActivity::class.java))
                 }
 
                 R.id.menu_trash -> {
@@ -102,6 +105,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.menu_setting -> {
                     val intent = Intent(this, SettingsActivity::class.java)
                     startActivity(intent)
+
                 }
 
                 R.id.menu_rate -> {
@@ -226,10 +230,11 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_search -> {
-                CoroutineScope(Dispatchers.Default).launch {
-                    val menu = binding.toolbar.menu
-                    for (i in 0 until menu.size()) {
-                        menu.getItem(i).setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
+                lifecycleScope.launch(Dispatchers.Main) {
+                    binding.toolbar.menu?.let { menu ->
+                        menu.forEach { menuItem ->
+                            menuItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
+                        }
                     }
                 }
             }
