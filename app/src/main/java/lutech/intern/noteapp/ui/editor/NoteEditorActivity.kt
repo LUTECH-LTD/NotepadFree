@@ -246,6 +246,7 @@ class NoteEditorActivity : AppCompatActivity() {
                 .Builder(this)
                 .setColors(resources.getStringArray(R.array.themeColorText))
                 .setColorListener { _, colorHex ->
+                    binding.cbFontColor.setBackgroundColor(Color.parseColor(colorHex))
                     val spannable = binding.contentEditText.text
                     val start = binding.contentEditText.selectionStart
                     val end = binding.contentEditText.selectionEnd
@@ -261,6 +262,7 @@ class NoteEditorActivity : AppCompatActivity() {
                 .Builder(this)
                 .setColors(resources.getStringArray(R.array.themeColorHex))
                 .setColorListener { _, colorHex ->
+                    binding.cbFontHighlight.setBackgroundColor(Color.parseColor(colorHex))
                     val spannable = binding.contentEditText.text
                     val start = binding.contentEditText.selectionStart
                     val end = binding.contentEditText.selectionEnd
@@ -319,41 +321,6 @@ class NoteEditorActivity : AppCompatActivity() {
             }.create().show()
         }
 
-        binding.contentEditText.setOnTouchListener { _, event ->
-            Log.d(Constants.TAG, "setOnTouchListener")
-            if (event.action == MotionEvent.ACTION_UP) {
-                binding.contentEditText.post {
-                    val startPosition = binding.contentEditText.selectionStart
-                    val endPosition = binding.contentEditText.selectionEnd
-                    val spannable = binding.contentEditText.text
-
-                    binding.cbFontBold.isChecked = false
-                    binding.cbFontItalic.isChecked = false
-                    binding.cbFontUnderline.isChecked = false
-                    binding.cbFontStrikethrough.isChecked = false
-
-                    val styleSpans = spannable?.getSpans(startPosition, endPosition, StyleSpan::class.java)
-                    styleSpans?.forEach { span ->
-                        when (span.style) {
-                            Typeface.BOLD -> binding.cbFontBold.isChecked = true
-                            Typeface.ITALIC -> binding.cbFontItalic.isChecked = true
-                        }
-                    }
-
-                    val underlineSpans = spannable?.getSpans(startPosition, endPosition, UnderlineSpan::class.java)
-                    if (!underlineSpans.isNullOrEmpty()) {
-                        binding.cbFontUnderline.isChecked = true
-                    }
-
-                    val strikethroughSpans = spannable?.getSpans(startPosition, endPosition, StrikethroughSpan::class.java)
-                    if (!strikethroughSpans.isNullOrEmpty()) {
-                        binding.cbFontStrikethrough.isChecked = true
-                    }
-                }
-            }
-            false
-        }
-
         binding.contentEditText.addTextChangedListener(object : TextWatcher{
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
             }
@@ -367,7 +334,7 @@ class NoteEditorActivity : AppCompatActivity() {
                         val currentSpannable = SpannableString(binding.contentEditText.text)
                         contentStack.push(currentSpannable)
                     }
-                    binding.toolbar.menu.findItem(R.id.menu_undo).isEnabled = contentStack.size > 1
+                    binding.toolbar.menu?.findItem(R.id.menu_undo)?.isEnabled = contentStack.size > 1
                 }
             }
         })

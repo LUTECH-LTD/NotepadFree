@@ -91,6 +91,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.menu_backup -> {
                     val intent = Intent(this, BackupActivity::class.java)
                     startActivity(intent)
+                    startActivity(Intent(this, BackupActivity::class.java))
                 }
 
                 R.id.menu_trash -> {
@@ -104,6 +105,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.menu_setting -> {
                     val intent = Intent(this, SettingsActivity::class.java)
                     startActivity(intent)
+
                 }
 
                 R.id.menu_rate -> {
